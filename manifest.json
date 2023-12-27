@@ -1,0 +1,7 @@
+{
+    "domain": "govee",
+    "name": "Govee Integration for H5179 and H7102 devices",
+    "requirements": ["requests==2.31.0"],
+    "iot_state": "cloud_polling",
+    "version": "0.1.0"
+}
