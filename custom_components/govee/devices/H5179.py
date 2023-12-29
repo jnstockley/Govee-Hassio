@@ -2,7 +2,7 @@
 # https://us.govee.com/products/wi-fi-temperature-humidity-sensor
 import logging
 
-import Generic
+from custom_components.govee.devices import Generic
 
 log = logging.getLogger()
 

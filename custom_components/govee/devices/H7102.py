@@ -2,7 +2,7 @@
 # https://www.goveelife.com/products/goveelife-smart-home-appliances-H7102
 import logging
 
-import Generic
+from custom_components.govee.devices import Generic
 
 log = logging.getLogger()
 
