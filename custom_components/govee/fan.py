@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, Any
+from typing import Any
 
-from . import H7102
+from custom_components.govee.devices import H7102
 
 import voluptuous as vol
 
@@ -20,6 +20,9 @@ from homeassistant.components.fan import (
 )
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+
+log = logging.getLogger()
+
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_DEVICE_ID): cv.string,
@@ -39,8 +42,6 @@ def setup_platform(
 
     add_entities([GoveeFan(device_id, api_key)])
 
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class GoveeFan(FanEntity):
@@ -76,7 +77,7 @@ class GoveeFan(FanEntity):
             preset_mode: str | None = None,
             **kwargs: Any,
     ) -> None:
-        _LOGGER.warning("Entering turn on")
+        log.warning("Entering turn on")
         H7102.on_off(api_key=self._api_key, mac_address=self._device_id, on=True)
         '''if percentage is not None:
             _LOGGER.warning("Entering set percentage mode: %s", percentage)
@@ -85,14 +86,14 @@ class GoveeFan(FanEntity):
             _LOGGER.warning("Entering preset mode: %s", preset_mode)
             self.set_preset_mode(preset_mode)'''
         self._attr_is_on = H7102.get_data(self._api_key, self._device_id).on
-        _LOGGER.warning("Entering New state is %s", self._attr_is_on)
+        log.warning("Entering New state is %s", self._attr_is_on)
 
     def turn_off(self, **kwargs: Any) -> None:
         """Turn the fan off."""
         if not self._attr_is_on:
             self.turn_on()
             return
-        _LOGGER.warning("Entering turn off")
+        log.warning("Entering turn off")
         H7102.on_off(api_key=self._api_key, mac_address=self._device_id, on=False)
         self._attr_is_on = H7102.get_data(self._api_key, self._device_id).on
 
@@ -117,7 +118,7 @@ class GoveeFan(FanEntity):
     def update(self) -> None:
         device = H7102.get_data(self._api_key, self._device_id)
         reversed_mode_enum = {1: "normal", 2: "custom", 3: "normal", 5: "sleep", 6: "nature"}
-        _LOGGER.warning(f"Device On: {self._attr_is_on}")
+        log.warning(f"Device On: {self._attr_is_on}")
         self._attr_is_on = device.on
         self._attr_oscillating = device.oscillation
         self._attr_preset_mode = reversed_mode_enum[device.work_mode['mode']]

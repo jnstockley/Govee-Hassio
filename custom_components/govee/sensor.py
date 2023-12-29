@@ -1,7 +1,9 @@
 """Platform for sensor integration."""
 from __future__ import annotations
 
-from . import H5179
+import logging
+
+from custom_components.govee.devices import H5179
 import voluptuous as vol
 
 import homeassistant.helpers.config_validation as cv
@@ -22,6 +24,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_DEVICE_ID): cv.string,
     vol.Required(CONF_API_KEY): cv.string,
 })
+
+
+log = logging.getLogger()
 
 
 def setup_platform(

@@ -1,7 +1,10 @@
 # Govee Wi-Fi Thermo-Hygrometer
 # https://us.govee.com/products/wi-fi-temperature-humidity-sensor
-from . import Generic
-from . import log
+import logging
+
+import Generic
+
+log = logging.getLogger()
 
 
 class H5179:
@@ -18,8 +21,8 @@ class H5179:
                 self.temperature: float = (int(capability['state']['value'] / 100) * 1.8) + 32
             elif capability['type'] == 'devices.capabilities.property' and capability['instance'] == 'sensorHumidity':
                 self.humidity: float = (int(capability['state']['value']['currentHumidity']) / 100)
-            #else:
-            #    log.warning(f'Unexpected capability found {capability['type']}')
+            else:
+                log.warning(f"Unexpected capability found {capability['type']}")
 
     def __str__(self):
         return (f'SKU: {self.sku}, Device: {self.device}, Online: {self.online}, Temperature: {self.temperature}, '
