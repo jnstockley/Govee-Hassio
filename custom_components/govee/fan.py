@@ -77,7 +77,7 @@ class GoveeFan(FanEntity):
             **kwargs: Any,
     ) -> None:
         log.warning("Entering turn on")
-        H7102.on_off(api_key=self._api_key, mac_address=self._device_id, on=True)
+        H7102.on_off(api_key=self._api_key, device_id=self._device_id, on=True)
         '''if percentage is not None:
             _LOGGER.warning("Entering set percentage mode: %s", percentage)
             self.set_percentage(percentage)
@@ -93,7 +93,7 @@ class GoveeFan(FanEntity):
             self.turn_on()
             return
         log.warning("Entering turn off")
-        H7102.on_off(api_key=self._api_key, mac_address=self._device_id, on=False)
+        H7102.on_off(api_key=self._api_key, device_id=self._device_id, on=False)
         self._attr_is_on = H7102.get_data(self._api_key, self._device_id).on
 
     def set_percentage(self, percentage: int) -> None:

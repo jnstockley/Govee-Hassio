@@ -9,19 +9,19 @@ BASE_URL_V2 = "https://developer-api.govee.com"
 log = logging.getLogger()
 
 
-def __get_data__(api_key: str, sku: str, mac_address: str) -> dict:
+def __get_data__(api_key: str, sku: str, device_id: str) -> dict:
     url = f"{BASE_URL}/router/api/v1/device/state"
     headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "openapi.api.govee.com"}
-    body = {"requestId": "uuid", "payload": {"sku": sku, "device": mac_address}}
+    body = {"requestId": "uuid", "payload": {"sku": sku, "device": device_id}}
 
     return __send_request__(url, headers, body)
 
 
-def __control_device__(api_key: str, sku: str, mac_address: str, capability: dict, v2_api: bool = False) -> bool:
+def __control_device__(api_key: str, sku: str, device_id: str, capability: dict, v2_api: bool = False) -> bool:
     if v2_api:
         url = f"{BASE_URL_V2}/v1/appliance/devices/control"
         headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "developer-api.govee.com"}
-        body = {"model": sku, "cmd": capability, "device": mac_address}
+        body = {"model": sku, "cmd": capability, "device": device_id}
 
         response = __send_request_v2__(url, headers, body)
 
@@ -35,7 +35,7 @@ def __control_device__(api_key: str, sku: str, mac_address: str, capability: dic
     else:
         url = f"{BASE_URL}/router/api/v1/device/control"
         headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "openapi.api.govee.com"}
-        body = {"requestId": "uuid", "payload": {"sku": sku, "device": mac_address, "capability": capability}}
+        body = {"requestId": "uuid", "payload": {"sku": sku, "device": device_id, "capability": capability}}
 
         expected_value = capability['value']
 
