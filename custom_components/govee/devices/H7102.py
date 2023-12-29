@@ -1,7 +1,10 @@
 # GoveeLife 36'' Smart Tower Fan
 # https://www.goveelife.com/products/goveelife-smart-home-appliances-H7102
+import logging
+
 import Generic
-# from . import log
+
+log = logging.getLogger()
 
 
 class H7102:
@@ -20,8 +23,8 @@ class H7102:
             elif capability['type'] == 'devices.capabilities.work_mode':
                 self.work_mode: dict[str: int] = {'mode': capability['state']['value']['workMode'],
                                                   'value': capability['state']['value']['modeValue']}
-            #else:
-            #    log.warning(f'Unexpected capability found {capability['type']}')
+            else:
+                log.warning(f"Unexpected capability found {capability['type']}")
 
     def __str__(self):
         return (f'SKU: {self.sku}, Device: {self.device}, Online: {self.online}, On: {self.on}, '
@@ -34,9 +37,7 @@ BASE_URL = "https://openapi.api.govee.com"
 def get_data(api_key: str, mac_address: str) -> H7102:
     data = Generic.__get_data__(api_key, "H7102", mac_address)
 
-    device: H7102 = H7102(data)
-
-    return device
+    return H7102(data)
 
 
 def on_off(api_key: str, mac_address: str, on: bool) -> bool:
@@ -52,8 +53,6 @@ def toggle_oscillation(api_key: str, mac_address: str, oscillation: bool) -> boo
 
 
 def change_mode_speed(api_key: str, mac_address: str, mode: int = 0, value: int = 0) -> bool:
-    device = get_data(api_key, mac_address)
-
     mode_enum = {2: "custom", 3: "auto", 5: "sleep", 6: "nature"}
 
     responses = []
@@ -66,11 +65,4 @@ def change_mode_speed(api_key: str, mac_address: str, mode: int = 0, value: int 
         capability = {"name": "gear", "value": value}
         responses.append(Generic.__control_device__(api_key, "H7102", mac_address, capability, v2_api=True))
 
-    # responses.append(on_off(api_key, mac_address, device.on))
-
     return all(responses)
-
-
-device = get_data(api_key='d8c587b9-c919-42d5-b7eb-324f2186c81d', mac_address='18:43:D4:AD:FC:BB:44:DA')
-
-on_off(api_key='d8c587b9-c919-42d5-b7eb-324f2186c81d', mac_address='18:43:D4:AD:FC:BB:44:DA', on=True)
