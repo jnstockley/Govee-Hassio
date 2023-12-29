@@ -1,9 +1,12 @@
+import logging
+
 import requests
 
 from .Exceptions import UnauthorizedException, InvalidDeviceException
 
 BASE_URL = "https://openapi.api.govee.com"
 BASE_URL_V2 = "https://developer-api.govee.com"
+_LOGGER = logging.getLogger(__name__)
 
 
 def __get_data__(api_key: str, sku: str, mac_address: str) -> dict:
@@ -52,6 +55,8 @@ def __control_device__(api_key: str, sku: str, mac_address: str, capability: dic
 def __send_request__(url: str, headers: dict = None, body: dict = None) -> dict:
     response = requests.post(url, json=body, headers=headers)
 
+    _LOGGER.info(response.text)
+
     if response.status_code != 200:
         if response.status_code == 400:
             raise UnauthorizedException("Invalid API Key")
@@ -70,6 +75,8 @@ def __send_request__(url: str, headers: dict = None, body: dict = None) -> dict:
 
 def __send_request_v2__(url: str, headers: dict = None, body: dict = None) -> dict:
     response = requests.put(url, json=body, headers=headers)
+
+    _LOGGER.info(response.text)
 
     code = int(response.json()['code']) if "code" in dict(response.json()).keys() else int(response.json()['status'])
 

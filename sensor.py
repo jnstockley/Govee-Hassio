@@ -23,6 +23,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_API_KEY): cv.string,
 })
 
+
 def setup_platform(
         hass: HomeAssistant,
         config: ConfigType,
@@ -40,6 +41,7 @@ def setup_platform(
 class H5179TempSensor(SensorEntity):
     """Representation of a Sensor."""
 
+    _attr_unique_id = CONF_DEVICE_ID
     _attr_name = "Temperature"
     _attr_native_unit_of_measurement = UnitOfTemperature.FAHRENHEIT
     _attr_device_class = SensorDeviceClass.TEMPERATURE
