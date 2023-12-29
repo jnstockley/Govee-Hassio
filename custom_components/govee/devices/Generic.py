@@ -2,7 +2,7 @@ import logging
 
 import requests
 
-from Exceptions import UnauthorizedException, InvalidDeviceException
+from custom_components.govee.devices.Exceptions import UnauthorizedException, InvalidDeviceException
 
 BASE_URL = "https://openapi.api.govee.com"
 BASE_URL_V2 = "https://developer-api.govee.com"
