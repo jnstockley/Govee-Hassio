@@ -46,7 +46,7 @@ def setup_platform(
 class H5179TempSensor(SensorEntity):
     """Representation of a Sensor."""
 
-    _attr_unique_id = CONF_DEVICE_ID
+    _attr_unique_id = f"{CONF_DEVICE_ID}-temp"
     _attr_name = "Temperature"
     _attr_native_unit_of_measurement = UnitOfTemperature.FAHRENHEIT
     _attr_device_class = SensorDeviceClass.TEMPERATURE
@@ -68,7 +68,7 @@ class H5179HumiditySensor(SensorEntity):
     """Representation of a Sensor."""
 
     _attr_name = "Humidity"
-    _attr_unique_id = CONF_DEVICE_ID
+    _attr_unique_id = f"{CONF_DEVICE_ID}-humidity"
     _attr_native_unit_of_measurement = PERCENTAGE
     _attr_device_class = SensorDeviceClass.HUMIDITY
     _attr_state_class = SensorStateClass.MEASUREMENT
