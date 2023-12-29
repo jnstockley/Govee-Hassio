@@ -43,7 +43,6 @@ def setup_platform(
     add_entities([GoveeFan(device_id, api_key)])
 
 
-
 class GoveeFan(FanEntity):
     _attr_unique_id = CONF_DEVICE_ID
     _attr_name = "Tower Fan"

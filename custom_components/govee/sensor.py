@@ -68,6 +68,7 @@ class H5179HumiditySensor(SensorEntity):
     """Representation of a Sensor."""
 
     _attr_name = "Humidity"
+    _attr_unique_id = CONF_DEVICE_ID
     _attr_native_unit_of_measurement = PERCENTAGE
     _attr_device_class = SensorDeviceClass.HUMIDITY
     _attr_state_class = SensorStateClass.MEASUREMENT
