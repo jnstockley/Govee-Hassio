@@ -7,8 +7,7 @@ from typing import Any, Optional
 
 from custom_components.govee.devices import H7102
 
-from homeassistant.util.percentage import ranged_value_to_percentage, percentage_to_ranged_value
-from homeassistant.util.scaling import int_states_in_range
+from homeassistant.util.percentage import ranged_value_to_percentage, percentage_to_ranged_value, int_states_in_range
 
 import voluptuous as vol
 
