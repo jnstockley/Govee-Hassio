@@ -29,7 +29,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 log = logging.getLogger()
 
 
-def async_setup_platform(
+async def async_setup_platform(
         hass: HomeAssistant,
         config: ConfigType,
         async_add_entities: AddEntitiesCallback,
@@ -40,7 +40,9 @@ def async_setup_platform(
     device_id = config[CONF_DEVICE_ID]
     api_key = config[CONF_API_KEY]
 
-    async_add_entities([H5179TempSensor(device_id, api_key), H5179HumiditySensor(device_id, api_key)])
+    device = H5179.get_data(api_key, device_id)
+
+    async_add_entities([H5179TempSensor(device_id, api_key, device), H5179HumiditySensor(device_id, api_key, device)])
 
 
 class H5179TempSensor(SensorEntity):
@@ -52,9 +54,10 @@ class H5179TempSensor(SensorEntity):
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, device_id: str, api_key:str) -> None:
+    def __init__(self, device_id: str, api_key:str, device: H5179) -> None:
         self._device_id = device_id
         self._api_key = api_key
+        self._attr_native_value = device.temperature
 
     async def async_update(self) -> None:
         """Fetch new state data for the sensor.
@@ -74,9 +77,10 @@ class H5179HumiditySensor(SensorEntity):
     _attr_device_class = SensorDeviceClass.HUMIDITY
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, device_id: str, api_key:str) -> None:
+    def __init__(self, device_id: str, api_key: str, device: H5179) -> None:
         self._device_id = device_id
         self._api_key = api_key
+        self._attr_native_value = device.humidity
 
     async def async_update(self) -> None:
         """Fetch new state data for the sensor.

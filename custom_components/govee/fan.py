@@ -30,7 +30,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
-def setup_platform(
+async def async_setup_platform(
         hass: HomeAssistant,
         config: ConfigType,
         add_entities: AddEntitiesCallback,
@@ -40,10 +40,14 @@ def setup_platform(
     device_id = config[CONF_DEVICE_ID]
     api_key = config[CONF_API_KEY]
 
-    add_entities([GoveeFan(device_id, api_key)])
+    device = await H7102.get_data(api_key, device_id)
+
+    add_entities([GoveeFan(device_id, api_key, device)])
 
 
 class GoveeFan(FanEntity):
+    reversed_mode_enum = {1: "normal", 2: "custom", 3: "normal", 5: "sleep", 6: "nature"}
+
     _attr_unique_id = CONF_DEVICE_ID
     _attr_name = "Tower Fan"
     _attr_is_on = False
@@ -61,9 +65,13 @@ class GoveeFan(FanEntity):
 
         return features
 
-    def __init__(self, device_id: str, api_key: str) -> None:
+    def __init__(self, device_id: str, api_key: str, device: H7102) -> None:
         self._device_id = device_id
         self._api_key = api_key
+        self._attr_is_on = device.on
+        self._attr_oscillating = device.oscillation
+        self._attr_preset_mode = self.reversed_mode_enum[device.work_mode['mode']]
+        self._attr_percentage = (device.work_mode['value'] / 8) * 100
 
     async def async_oscillate(self, oscillating: bool) -> None:
         """Oscillate the fan."""
@@ -121,8 +129,7 @@ class GoveeFan(FanEntity):
 
     async def async_update(self) -> None:
         device = await H7102.get_data(self._api_key, self._device_id)
-        reversed_mode_enum = {1: "normal", 2: "custom", 3: "normal", 5: "sleep", 6: "nature"}
         self._attr_is_on = device.on
         self._attr_oscillating = device.oscillation
-        self._attr_preset_mode = reversed_mode_enum[device.work_mode['mode']]
+        self._attr_preset_mode = self.reversed_mode_enum[device.work_mode['mode']]
         self._attr_percentage = (device.work_mode['value'] / 8) * 100
