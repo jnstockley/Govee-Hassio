@@ -34,14 +34,16 @@ class PlaceholderHub:
     def __init__(self, host: str) -> None:
         """Initialize."""
         self.host = host
+        self.devices = None
 
-    def authenticate(self, api_key) -> bool:
+    async def authenticate(self, api_key) -> bool:
         devices = Generic.__get_devices__(api_key)
+        self.devices = devices
         """Test if we can authenticate with the host."""
         return len(devices) > 0
 
 
-def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
+async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Validate the user input allows us to connect.
 
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
@@ -50,14 +52,14 @@ def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
 
     # If your PyPI package is not built with async, pass your methods
     # to the executor:
-    # await hass.async_add_executor_job(
-    #     your_validate_func, data[CONF_USERNAME], data[CONF_PASSWORD]
-    # )
+    hub = await hass.async_add_executor_job(
+         PlaceholderHub, data[CONF_API_KEY]
+     )
 
-    hub = PlaceholderHub(data[CONF_API_KEY])
+    # hub = PlaceholderHub(data[CONF_API_KEY])
 
-    if not hub.authenticate(data[CONF_API_KEY]):
-        raise InvalidAuth
+    # if not await hub.authenticate(data[CONF_API_KEY]):
+    #    raise InvalidAuth
 
     # If you cannot connect:
     # throw CannotConnect
@@ -65,7 +67,7 @@ def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     # InvalidAuth
 
     # Return info that you want to store in the config entry.
-    return {"title": "Name of the device"}
+    return {"devices": hub.devices, "api_key": data[CONF_API_KEY]}
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -74,14 +76,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     MINOR_VERSION = 1
 
-    def async_step_user(
+    async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                info = validate_input(self.hass, user_input)
+                info = await validate_input(self.hass, user_input)
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             except InvalidAuth:
