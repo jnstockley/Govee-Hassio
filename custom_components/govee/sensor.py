@@ -29,7 +29,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 log = logging.getLogger()
 
 
-def setup_platform(
+def async_setup_platform(
         hass: HomeAssistant,
         config: ConfigType,
         add_entities: AddEntitiesCallback,
@@ -56,12 +56,13 @@ class H5179TempSensor(SensorEntity):
         self._device_id = device_id
         self._api_key = api_key
 
-    def update(self) -> None:
+    async def async_update(self) -> None:
         """Fetch new state data for the sensor.
 
         This is the only method that should fetch new data for Home Assistant.
         """
-        self._attr_native_value = H5179.get_data(api_key=self._api_key, device_id=self._device_id).temperature
+        device = await H5179.get_data(api_key=self._api_key, device_id=self._device_id)
+        self._attr_native_value = device.temperature
 
 
 class H5179HumiditySensor(SensorEntity):
@@ -77,9 +78,10 @@ class H5179HumiditySensor(SensorEntity):
         self._device_id = device_id
         self._api_key = api_key
 
-    def update(self) -> None:
+    async def async_update(self) -> None:
         """Fetch new state data for the sensor.
 
         This is the only method that should fetch new data for Home Assistant.
         """
-        self._attr_native_value = H5179.get_data(api_key=self._api_key, device_id=self._device_id).humidity
+        device = await H5179.get_data(api_key=self._api_key, device_id=self._device_id)
+        self._attr_native_value = device.humidity
