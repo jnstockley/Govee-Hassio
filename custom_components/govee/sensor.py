@@ -61,7 +61,7 @@ class H5179TempSensor(SensorEntity):
 
         This is the only method that should fetch new data for Home Assistant.
         """
-        self._attr_native_value = H5179.get_data(api_key=self._api_key, mac_address=self._device_id).temperature
+        self._attr_native_value = H5179.get_data(api_key=self._api_key, device_id=self._device_id).temperature
 
 
 class H5179HumiditySensor(SensorEntity):
@@ -82,4 +82,4 @@ class H5179HumiditySensor(SensorEntity):
 
         This is the only method that should fetch new data for Home Assistant.
         """
-        self._attr_native_value = H5179.get_data(api_key=self._api_key, mac_address=self._device_id).humidity
+        self._attr_native_value = H5179.get_data(api_key=self._api_key, device_id=self._device_id).humidity

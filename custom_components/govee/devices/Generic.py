@@ -1,4 +1,5 @@
 import logging
+from typing import Literal
 
 import requests
 
@@ -9,19 +10,39 @@ BASE_URL_V2 = "https://developer-api.govee.com"
 log = logging.getLogger()
 
 
-def __get_data__(api_key: str, sku: str, mac_address: str) -> dict:
+def __get_devices__(api_key) -> dict:
+    url = f"{BASE_URL}/router/api/v1/user/devices"
+    headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "openapi.api.govee.com"}
+
+    response = __send_request__(url, 'GET', headers=headers)
+
+    data = response['data']
+
+    devices: {str: list[str]} = {}
+
+    for device in data:
+        if device['sku'] in devices.keys():
+            sku = device['sku']
+            devices[sku].append(device['device'])
+        else:
+            devices[device['sku']] = [device['device']]
+
+    return devices
+
+
+def __get_data__(api_key: str, sku: str, device_id: str) -> dict:
     url = f"{BASE_URL}/router/api/v1/device/state"
     headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "openapi.api.govee.com"}
-    body = {"requestId": "uuid", "payload": {"sku": sku, "device": mac_address}}
+    body = {"requestId": "uuid", "payload": {"sku": sku, "device": device_id}}
 
-    return __send_request__(url, headers, body)
+    return __send_request__(url, 'POST', headers, body)
 
 
-def __control_device__(api_key: str, sku: str, mac_address: str, capability: dict, v2_api: bool = False) -> bool:
+def __control_device__(api_key: str, sku: str, device_id: str, capability: dict, v2_api: bool = False) -> bool:
     if v2_api:
         url = f"{BASE_URL_V2}/v1/appliance/devices/control"
         headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "developer-api.govee.com"}
-        body = {"model": sku, "cmd": capability, "device": mac_address}
+        body = {"model": sku, "cmd": capability, "device": device_id}
 
         response = __send_request_v2__(url, headers, body)
 
@@ -35,11 +56,11 @@ def __control_device__(api_key: str, sku: str, mac_address: str, capability: dic
     else:
         url = f"{BASE_URL}/router/api/v1/device/control"
         headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "openapi.api.govee.com"}
-        body = {"requestId": "uuid", "payload": {"sku": sku, "device": mac_address, "capability": capability}}
+        body = {"requestId": "uuid", "payload": {"sku": sku, "device": device_id, "capability": capability}}
 
         expected_value = capability['value']
 
-        response = __send_request__(url, headers, body)
+        response = __send_request__(url, 'POST', headers, body)
 
         msg = response['msg']
         code: int = int(response['code'])
@@ -52,8 +73,12 @@ def __control_device__(api_key: str, sku: str, mac_address: str, capability: dic
             return False
 
 
-def __send_request__(url: str, headers: dict = None, body: dict = None) -> dict:
-    response = requests.post(url, json=body, headers=headers)
+def __send_request__(url: str, method: Literal['POST', 'GET'], headers: dict = None, body: dict = None) -> dict:
+
+    if method == 'POST':
+        response = requests.post(url, json=body, headers=headers)
+    elif method == 'GET':
+        response = requests.get(url, json=body, headers=headers)
 
     log.info(response.text)
 
@@ -62,7 +87,7 @@ def __send_request__(url: str, headers: dict = None, body: dict = None) -> dict:
             raise UnauthorizedException("Invalid API Key")
         raise Exception(f"Unknown Error Occurred. Error Code: {response.status_code}, Error Message: {response.text}")
 
-    msg = response.json()['msg']
+    msg = response.json()['msg'] if 'msg' in response.json().keys() else response.json()['message']
 
     if msg == "devices not exist":
         payload = response.json()['payload']
