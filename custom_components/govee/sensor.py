@@ -40,7 +40,7 @@ async def async_setup_platform(
     device_id = config[CONF_DEVICE_ID]
     api_key = config[CONF_API_KEY]
 
-    device = H5179.get_data(api_key, device_id)
+    device = await H5179.get_data(api_key, device_id)
 
     async_add_entities([H5179TempSensor(device_id, api_key, device), H5179HumiditySensor(device_id, api_key, device)])
 
