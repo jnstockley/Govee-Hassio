@@ -11,6 +11,8 @@ from homeassistant.const import CONF_API_KEY
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import device_registry as dr
+
 
 from .const import DOMAIN
 from .devices import Generic
@@ -65,6 +67,13 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     # throw CannotConnect
     # If the authentication is wrong:
     # InvalidAuth
+
+    device_registry = dr.async_get(hass)
+
+    device_registry.async_get_or_create(
+        identifiers={(DOMAIN, hub.devices['H5179'])},
+        name="Govee Wi-Fi Thermo-Hygrometer"
+    )
 
     # Return info that you want to store in the config entry.
     return {"devices": hub.devices, "api_key": data[CONF_API_KEY]}
