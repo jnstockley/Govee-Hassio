@@ -35,13 +35,13 @@ class PlaceholderHub:
         """Initialize."""
         self.host = host
 
-    async def authenticate(self, api_key) -> bool:
+    def authenticate(self, api_key) -> bool:
         devices = Generic.__get_devices__(api_key)
         """Test if we can authenticate with the host."""
         return len(devices) > 0
 
 
-async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
+def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Validate the user input allows us to connect.
 
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
@@ -56,7 +56,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 
     hub = PlaceholderHub(data[CONF_API_KEY])
 
-    if not await hub.authenticate(data[CONF_API_KEY]):
+    if not hub.authenticate(data[CONF_API_KEY]):
         raise InvalidAuth
 
     # If you cannot connect:
@@ -74,14 +74,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     MINOR_VERSION = 1
 
-    async def async_step_user(
+    def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                info = await validate_input(self.hass, user_input)
+                info = validate_input(self.hass, user_input)
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             except InvalidAuth:
