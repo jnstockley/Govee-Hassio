@@ -30,17 +30,17 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
-def async_setup_platform(
+def setup_platform(
         hass: HomeAssistant,
         config: ConfigType,
-        async_add_entities: AddEntitiesCallback,
+        add_entities: AddEntitiesCallback,
         discovery_info: DiscoveryInfoType | None = None
 ) -> None:
     """Set up the sensor platform."""
     device_id = config[CONF_DEVICE_ID]
     api_key = config[CONF_API_KEY]
 
-    async_add_entities([GoveeFan(device_id, api_key)])
+    add_entities([GoveeFan(device_id, api_key)])
 
 
 class GoveeFan(FanEntity):
