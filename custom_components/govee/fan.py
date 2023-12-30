@@ -2,9 +2,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+import math
+from typing import Any, Optional
 
 from custom_components.govee.devices import H7102
+
+from homeassistant.util.percentage import ranged_value_to_percentage, percentage_to_ranged_value
+from homeassistant.util.scaling import int_states_in_range
 
 import voluptuous as vol
 
@@ -55,6 +59,12 @@ class GoveeFan(FanEntity):
     _attr_percentage = 8
     _attr_preset_modes = ['Normal', 'Sleep', 'Nature', 'Custom']
 
+    SPEED_RANGE = (1, 9)
+
+    percentage = ranged_value_to_percentage(SPEED_RANGE, 127)
+
+    value_in_range = math.ceil(percentage_to_ranged_value(SPEED_RANGE, 50))
+
     @property
     def supported_features(self) -> FanEntityFeature:
         """Flag supported features."""
@@ -72,6 +82,26 @@ class GoveeFan(FanEntity):
         self._attr_oscillating = device.oscillation
         self._attr_preset_mode = self.reversed_mode_enum[device.work_mode['mode']]
         self._attr_percentage = (device.work_mode['value'] / 8) * 100
+        self._speed = device.work_mode['value']
+
+    @property
+    def _speed_range(self) -> tuple[int, int]:
+        """Return the range of speeds."""
+        return 1, 9
+
+    @property
+    def percentage(self) -> int:
+        """Return the current speed percentage for the fan."""
+        if not self._speed:
+            return 0
+        return min(
+            100, max(0, ranged_value_to_percentage(self._speed_range, self._speed))
+        )
+
+    @property
+    def speed_count(self) -> int:
+        """Return the number of speeds the fan supports."""
+        return int_states_in_range(self._speed_range)
 
     async def async_oscillate(self, oscillating: bool) -> None:
         """Oscillate the fan."""
