@@ -7,21 +7,20 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import CONF_API_KEY
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 
 from .const import DOMAIN
+from .devices import Generic
 
 _LOGGER = logging.getLogger(__name__)
 
 # TODO adjust the data schema to the data that you need
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_HOST): str,
-        vol.Required(CONF_USERNAME): str,
-        vol.Required(CONF_PASSWORD): str,
+        vol.Required(CONF_API_KEY): str
     }
 )
 
@@ -36,9 +35,10 @@ class PlaceholderHub:
         """Initialize."""
         self.host = host
 
-    async def authenticate(self, username: str, password: str) -> bool:
+    async def authenticate(self, api_key) -> bool:
+        devices = Generic.__get_devices__(api_key)
         """Test if we can authenticate with the host."""
-        return True
+        return len(devices) > 0
 
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
@@ -54,9 +54,9 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     #     your_validate_func, data[CONF_USERNAME], data[CONF_PASSWORD]
     # )
 
-    hub = PlaceholderHub(data[CONF_HOST])
+    hub = PlaceholderHub(data[CONF_API_KEY])
 
-    if not await hub.authenticate(data[CONF_USERNAME], data[CONF_PASSWORD]):
+    if not await hub.authenticate(data[CONF_API_KEY]):
         raise InvalidAuth
 
     # If you cannot connect:
@@ -72,6 +72,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Govee."""
 
     VERSION = 1
+    MINOR_VERSION = 1
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
