@@ -33,7 +33,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 async def async_setup_platform(
         hass: HomeAssistant,
         config: ConfigType,
-        add_entities: AddEntitiesCallback,
+        async_add_entities: AddEntitiesCallback,
         discovery_info: DiscoveryInfoType | None = None
 ) -> None:
     """Set up the sensor platform."""
@@ -42,7 +42,7 @@ async def async_setup_platform(
 
     device = await H7102.get_data(api_key, device_id)
 
-    add_entities([GoveeFan(device_id, api_key, device)])
+    async_add_entities([GoveeFan(device_id, api_key, device)])
 
 
 class GoveeFan(FanEntity):
