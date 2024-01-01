@@ -2,12 +2,9 @@
 from __future__ import annotations
 
 import logging
-import math
-from typing import Any, Optional
+from typing import Any
 
 from custom_components.govee.devices import H7102
-
-from homeassistant.util.percentage import ranged_value_to_percentage, percentage_to_ranged_value
 
 import voluptuous as vol
 
@@ -33,133 +30,132 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
-async def async_setup_platform(
+def setup_platform(
         hass: HomeAssistant,
         config: ConfigType,
-        async_add_entities: AddEntitiesCallback,
+        add_entities: AddEntitiesCallback,
         discovery_info: DiscoveryInfoType | None = None
 ) -> None:
     """Set up the sensor platform."""
     device_id = config[CONF_DEVICE_ID]
     api_key = config[CONF_API_KEY]
 
-    device = await H7102.get_data(api_key, device_id)
-
-    async_add_entities([GoveeFan(device_id, api_key, device)])
+    add_entities([GoveeFan(api_key, device_id)])
 
 
 class GoveeFan(FanEntity):
-    reversed_mode_enum = {1: "normal", 2: "custom", 3: "normal", 5: "sleep", 6: "nature"}
+    reversed_mode_enum = {1: "Normal", 2: "Custom", 3: "Normal", 5: "Sleep", 6: "Nature"}
 
     _attr_unique_id = CONF_DEVICE_ID
     _attr_name = "Tower Fan"
-    _attr_is_on = False
-    _attr_oscillating = True
-    _attr_percentage = 8
-    _attr_preset_modes = ['Normal', 'Sleep', 'Nature', 'Custom']
+    # _attr_is_on = False
+    # _attr_oscillating = False
+    # _attr_percentage = 0
+    # _attr_preset_modes = ['Normal', 'Sleep', 'Nature', 'Custom']
+    # _attr_preset_mode = 'Normal'
+    # _attr_speed_count = 3
 
-    SPEED_RANGE = (1, 3)
-
-    percentage = ranged_value_to_percentage(SPEED_RANGE, 127)
-
-    value_in_range = math.ceil(percentage_to_ranged_value(SPEED_RANGE, 50))
-
-    def __init__(self, device_id: str, api_key: str, device: H7102) -> None:
-        self._device_id = device_id
-        self._api_key = api_key
-        self._attr_is_on = device.on
-        self._attr_oscillating = device.oscillation
-        self._attr_preset_mode = self.reversed_mode_enum[device.work_mode['mode']]
-        self._attr_percentage = (device.work_mode['value'] / 8) * 100
-        self._speed = device.work_mode['value']
+    def __init__(self, api_key: str, device_id: str) -> None:
+        self.api_key = api_key
+        self.device_id = device_id
 
     @property
     def supported_features(self) -> FanEntityFeature:
         """Flag supported features."""
         features = FanEntityFeature(0)
         features |= FanEntityFeature.SET_SPEED
-        features |= FanEntityFeature.PRESET_MODE
+        # features |= FanEntityFeature.PRESET_MODE
         features |= FanEntityFeature.OSCILLATE
 
         return features
 
     @property
-    def _speed_range(self) -> tuple[int, int]:
-        """Return the range of speeds."""
-        return 1, 3
-
-    @property
     def percentage(self) -> int:
-        """Return the current speed percentage for the fan."""
-        if not self._speed:
+        device = H7102.get_data(api_key=self.api_key, device_id=self.device_id)
+        if device.on:
+            return (device.work_mode['value'] / 8) * 100
+        else:
             return 0
-        return min(
-            100, max(0, ranged_value_to_percentage(self._speed_range, self._speed))
-        )
 
     @property
     def speed_count(self) -> int:
-        """Return the number of speeds the fan supports."""
         return 3
 
-    async def async_oscillate(self, oscillating: bool) -> None:
-        """Oscillate the fan."""
-        await H7102.toggle_oscillation(self._api_key, self._device_id, oscillating)
-        device = await H7102.get_data(self._api_key, self._device_id)
-        self._attr_oscillating = device.oscillation
+    @property
+    def oscillating(self) -> bool:
+        device = H7102.get_data(api_key=self.api_key, device_id=self.device_id)
+        return device.oscillation
 
-    async def async_turn_on(
-            self,
-            percentage: int | None = None,
-            preset_mode: str | None = None,
-            **kwargs: Any,
-    ) -> None:
-        log.warning("Entering turn on")
-        await H7102.on_off(api_key=self._api_key, device_id=self._device_id, on=True)
-        '''if percentage is not None:
-            _LOGGER.warning("Entering set percentage mode: %s", percentage)
-            self.set_percentage(percentage)
-        if preset_mode is not None:
-            _LOGGER.warning("Entering preset mode: %s", preset_mode)
-            self.set_preset_mode(preset_mode)'''
-        device = await H7102.get_data(self._api_key, self._device_id)
-        self._attr_is_on = device.on
-        log.warning("Entering New state is %s", self._attr_is_on)
+    @property
+    def is_on(self) -> bool:
+        device = H7102.get_data(api_key=self.api_key, device_id=self.device_id)
+        return device.on
 
-    async def async_turn_off(self, **kwargs: Any) -> None:
-        """Turn the fan off."""
-        if not self._attr_is_on:
-            self.turn_on()
-            return
-        log.warning("Entering turn off")
-        await H7102.on_off(api_key=self._api_key, device_id=self._device_id, on=False)
-        device = await H7102.get_data(self._api_key, self._device_id)
-        self._attr_is_on = device.on
+    def oscillate(self, oscillating: bool) -> None:
+        success = H7102.toggle_oscillation(self.api_key, self.device_id, oscillating)
 
-    async def async_set_percentage(self, percentage: int) -> None:
-        """Set the speed percentage of the fan."""
+        if success:
+            self._attr_oscillating = oscillating
+            log.info(f"Set Oscillation to {self._attr_oscillating} and it should be {oscillating}")
+        else:
+            log.warning(f"Failed setting oscillation to {oscillating}")
 
+    def turn_on(self, percentage: int | None = None, **kwargs: Any) -> None:
+        success = H7102.on_off(self.api_key, self.device_id, True)
+
+        if success:
+            self._attr_is_on = True
+            log.info(f"Set is_on state to {self._attr_is_on} and it should be True")
+
+        if percentage is not None:
+            success = self.async_set_percentage(percentage)
+            if success:
+                self._attr_percentage = percentage
+                log.info(f"Set percentage to {self._attr_percentage} and it should be {percentage}")
+            else:
+                log.warning(f"Failed to set percentage to {percentage}")
+
+    def turn_off(self, **kwargs: Any) -> None:
+        success = H7102.on_off(self.api_key, self.device_id, False)
+
+        if success:
+            self._attr_is_on = False
+            log.info(f"Set is_on to {self._attr_is_on} and it should be False")
+        else:
+            log.warning(f"Failed to set is_on to False")
+
+    def set_percentage(self, percentage: int) -> None:
         speed = int(percentage / 100 * 8)
 
         if speed == 0:
-            await self.async_turn_off()
+            success = H7102.on_off(self.api_key, self.device_id, False)
+
+            if success:
+                self._attr_is_on = False
+                log.info(f"Set is_on to {self._attr_is_on} and it should be False")
+            else:
+                log.warning(f"Failed to set is_on to False")
         else:
-            await H7102.change_mode_speed(self._api_key, self._device_id, value=speed)
+            success = H7102.change_mode_speed(self.api_key, self.device_id, value=speed)
 
-        device = await H7102.get_data(self._api_key, self._device_id)
-        self._attr_percentage = (device.work_mode['value'] / 8) * 100
+            if success:
+                self._attr_percentage = percentage
+                log.info(f"Set percentage to {self._attr_percentage} and it should be {percentage}")
+            else:
+                log.warning(f"Failed to set percentage to {percentage}")
 
-    async def async_set_preset_mode(self, preset_mode: str) -> None:
-        """Set the preset mode of the fan."""
-        mode_enum = {'custom': 2, 'normal': 3, 'sleep': 5, 'nature': 6}
-        await H7102.change_mode_speed(self._api_key, self._device_id, mode=mode_enum[preset_mode.lower()])
-        reversed_mode_enum = {1: "normal", 2: "custom", 3: "normal", 5: "sleep", 6: "nature"}
-        device = await H7102.get_data(self._api_key, self._device_id)
-        self._attr_preset_mode = reversed_mode_enum[device.work_mode['mode']]
+    def update(self) -> None:
+        log.info("Running async_update...")
+        device = H7102.get_data(api_key=self.api_key, device_id=self.device_id)
 
-    async def async_update(self) -> None:
-        device = await H7102.get_data(self._api_key, self._device_id)
         self._attr_is_on = device.on
+        if not self._attr_is_on:
+            self._attr_percentage = 0
+        else:
+            self._attr_percentage = (device.work_mode['value'] / 8) * 100
         self._attr_oscillating = device.oscillation
-        self._attr_preset_mode = self.reversed_mode_enum[device.work_mode['mode']]
-        self._attr_percentage = (device.work_mode['value'] / 8) * 100
+
+        log.info(f"Set is_on to {self._attr_is_on}")
+        log.info(f"Set percentage to {self._attr_percentage}")
+        log.info(f"Set oscillating to {self._attr_oscillating}")
+        # self._attr_preset_mode = self.reversed_mode_enum[device.work_mode['mode']]

@@ -29,10 +29,10 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 log = logging.getLogger()
 
 
-async def async_setup_platform(
+async def setup_platform(
         hass: HomeAssistant,
         config: ConfigType,
-        async_add_entities: AddEntitiesCallback,
+        add_entities: AddEntitiesCallback,
         discovery_info: DiscoveryInfoType | None = None
 ) -> None:
     """Set up the sensor platform."""
@@ -40,9 +40,9 @@ async def async_setup_platform(
     device_id = config[CONF_DEVICE_ID]
     api_key = config[CONF_API_KEY]
 
-    device = await H5179.get_data(api_key, device_id)
+    device = H5179.get_data(api_key, device_id)
 
-    async_add_entities([H5179TempSensor(device_id, api_key, device), H5179HumiditySensor(device_id, api_key, device)])
+    add_entities([H5179TempSensor(device_id, api_key, device), H5179HumiditySensor(device_id, api_key, device)])
 
 
 class H5179TempSensor(SensorEntity):
@@ -59,12 +59,12 @@ class H5179TempSensor(SensorEntity):
         self._api_key = api_key
         self._attr_native_value = device.temperature
 
-    async def async_update(self) -> None:
+    def update(self) -> None:
         """Fetch new state data for the sensor.
 
         This is the only method that should fetch new data for Home Assistant.
         """
-        device = await H5179.get_data(api_key=self._api_key, device_id=self._device_id)
+        device = H5179.get_data(api_key=self._api_key, device_id=self._device_id)
         self._attr_native_value = device.temperature
 
 
@@ -82,10 +82,10 @@ class H5179HumiditySensor(SensorEntity):
         self._api_key = api_key
         self._attr_native_value = device.humidity
 
-    async def async_update(self) -> None:
+    def update(self) -> None:
         """Fetch new state data for the sensor.
 
         This is the only method that should fetch new data for Home Assistant.
         """
-        device = await H5179.get_data(api_key=self._api_key, device_id=self._device_id)
+        device = H5179.get_data(api_key=self._api_key, device_id=self._device_id)
         self._attr_native_value = device.humidity

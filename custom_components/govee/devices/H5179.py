@@ -29,8 +29,8 @@ class H5179:
                 f'Humidity: {self.humidity}')
 
 
-async def get_data(api_key: str, device_id: str) -> H5179:
-    data = await Generic.__get_data__(api_key, "H5179", device_id)
+def get_data(api_key: str, device_id: str) -> H5179:
+    data = Generic.__get_data__(api_key, "H5179", device_id)
 
     device = H5179(data)
 
