@@ -62,7 +62,7 @@ class GoveeFan(FanEntity):
             self._attr_percentage = (device.work_mode['value'] / 8) * 100
         else:
             self._attr_percentage = 0
-        self._attr_speed_count = 3
+        self._attr_speed_count = 8
 
     @property
     def supported_features(self) -> FanEntityFeature:
