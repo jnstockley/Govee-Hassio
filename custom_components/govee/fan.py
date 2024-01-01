@@ -48,21 +48,12 @@ async def async_setup_platform(
 class GoveeFan(FanEntity):
     reversed_mode_enum = {1: "Normal", 2: "Custom", 3: "Normal", 5: "Sleep", 6: "Nature"}
 
-    # _attr_unique_id = CONF_DEVICE_ID
-    # _attr_name = "Tower Fan"
-    # _attr_is_on = False
-    # _attr_oscillating = False
-    # _attr_percentage = 0
-    # _attr_preset_modes = ['Normal', 'Sleep', 'Nature', 'Custom']
-    # _attr_preset_mode = 'Normal'
-    # _attr_speed_count = 3
+    _attr_unique_id = CONF_DEVICE_ID
+    _attr_name = "Tower Fan"
 
     def __init__(self, api_key: str, device_id: str, device: H7102) -> None:
         self.api_key = api_key
         self.device_id = device_id
-
-        self._attr_unique_id = CONF_DEVICE_ID
-        self._attr_name = "Tower Fan"
 
         self._attr_is_on = device.on
         self._attr_oscillating = device.oscillation
@@ -71,70 +62,60 @@ class GoveeFan(FanEntity):
             self._attr_percentage = (device.work_mode['value'] / 8) * 100
         else:
             self._attr_percentage = 0
-        _attr_speed_count = 3
+        self._attr_speed_count = 3
 
     @property
     def supported_features(self) -> FanEntityFeature:
         """Flag supported features."""
         features = FanEntityFeature(0)
         features |= FanEntityFeature.SET_SPEED
-        # features |= FanEntityFeature.PRESET_MODE
         features |= FanEntityFeature.OSCILLATE
 
         return features
 
     async def async_oscillate(self, oscillating: bool) -> None:
+        current_value: bool = self._attr_oscillating
+
+        self._attr_oscillating = oscillating
+
         success = await H7102.toggle_oscillation(self.api_key, self.device_id, oscillating)
 
         if success:
-            self._attr_oscillating = oscillating
             log.info(f"Set Oscillation to {self._attr_oscillating} and it should be {oscillating}")
         else:
+            self._attr_oscillating = current_value
             log.warning(f"Failed setting oscillation to {oscillating}")
 
-    async def async_turn_on(self, percentage: int | None = None, **kwargs: Any) -> None:
-        success = await H7102.on_off(self.api_key, self.device_id, True)
-
-        if success:
-            self._attr_is_on = True
-            log.info(f"Set is_on state to {self._attr_is_on} and it should be True")
-
-        if percentage is not None:
-            success = self.async_set_percentage(percentage)
-            if success:
-                self._attr_percentage = percentage
-                log.info(f"Set percentage to {self._attr_percentage} and it should be {percentage}")
-            else:
-                log.warning(f"Failed to set percentage to {percentage}")
-
     async def async_turn_off(self, **kwargs: Any) -> None:
+        current_value = self._attr_is_on
+
+        self._attr_is_on = False
+
         success = await H7102.on_off(self.api_key, self.device_id, False)
 
         if success:
-            self._attr_is_on = False
             log.info(f"Set is_on to {self._attr_is_on} and it should be False")
         else:
+            self._attr_is_on = current_value
             log.warning(f"Failed to set is_on to False")
 
     async def async_set_percentage(self, percentage: int) -> None:
-        speed = int(percentage / 100 * 8)
+        current_value_on = self._attr_is_on
+        current_value_pct = self._attr_percentage
 
-        if speed == 0:
-            success = await H7102.on_off(self.api_key, self.device_id, False)
+        speed: int = int((percentage / 100) * 8)
 
-            if success:
-                self._attr_is_on = False
-                log.info(f"Set is_on to {self._attr_is_on} and it should be False")
-            else:
-                log.warning(f"Failed to set is_on to False")
+        self._attr_is_on = True
+        self._attr_percentage = percentage
+
+        success = await H7102.change_mode_speed(self.api_key, self.device_id, value=speed)
+
+        if success:
+            log.info(f"Set percentage to {self._attr_percentage} and it should be {percentage}")
         else:
-            success = await H7102.change_mode_speed(self.api_key, self.device_id, value=speed)
-
-            if success:
-                self._attr_percentage = percentage
-                log.info(f"Set percentage to {self._attr_percentage} and it should be {percentage}")
-            else:
-                log.warning(f"Failed to set percentage to {percentage}")
+            self._attr_is_on = current_value_on
+            self._attr_percentage = current_value_pct
+            log.warning(f"Failed to set percentage to {percentage}")
 
     async def async_update(self) -> None:
         log.info("Running async_update...")
@@ -150,4 +131,3 @@ class GoveeFan(FanEntity):
         log.info(f"Set is_on to {self._attr_is_on}")
         log.info(f"Set percentage to {self._attr_percentage}")
         log.info(f"Set oscillating to {self._attr_oscillating}")
-        # self._attr_preset_mode = self.reversed_mode_enum[device.work_mode['mode']]
