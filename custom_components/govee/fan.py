@@ -58,7 +58,7 @@ class GoveeFan(FanEntity):
     _attr_percentage = 8
     _attr_preset_modes = ['Normal', 'Sleep', 'Nature', 'Custom']
 
-    SPEED_RANGE = (1, 9)
+    SPEED_RANGE = (1, 4)
 
     percentage = ranged_value_to_percentage(SPEED_RANGE, 127)
 
