@@ -58,7 +58,7 @@ class GoveeFan(FanEntity):
     _attr_percentage = 8
     _attr_preset_modes = ['Normal', 'Sleep', 'Nature', 'Custom']
 
-    SPEED_RANGE = (1, 4)
+    SPEED_RANGE = (1, 3)
 
     percentage = ranged_value_to_percentage(SPEED_RANGE, 127)
 
@@ -86,7 +86,7 @@ class GoveeFan(FanEntity):
     @property
     def _speed_range(self) -> tuple[int, int]:
         """Return the range of speeds."""
-        return 1, 9
+        return 1, 3
 
     @property
     def percentage(self) -> int:
@@ -100,7 +100,7 @@ class GoveeFan(FanEntity):
     @property
     def speed_count(self) -> int:
         """Return the number of speeds the fan supports."""
-        return 8
+        return 3
 
     async def async_oscillate(self, oscillating: bool) -> None:
         """Oscillate the fan."""
@@ -142,9 +142,10 @@ class GoveeFan(FanEntity):
         speed = int(percentage / 100 * 8)
 
         if speed == 0:
-            speed = 1
+            await self.async_turn_off()
+        else:
+            await H7102.change_mode_speed(self._api_key, self._device_id, value=speed)
 
-        await H7102.change_mode_speed(self._api_key, self._device_id, value=speed)
         device = await H7102.get_data(self._api_key, self._device_id)
         self._attr_percentage = (device.work_mode['value'] / 8) * 100
 
