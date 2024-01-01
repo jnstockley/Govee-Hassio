@@ -34,37 +34,37 @@ class H7102:
 BASE_URL = "https://openapi.api.govee.com"
 
 
-def get_data(api_key: str, device_id: str) -> H7102:
+async def get_data(api_key: str, device_id: str) -> H7102:
     data = Generic.__get_data__(api_key, "H7102", device_id)
 
-    return H7102(data)
+    return H7102(await data)
 
 
-def on_off(api_key: str, device_id: str, on: bool) -> bool:
+async def on_off(api_key: str, device_id: str, on: bool) -> bool:
     capability = {"type": "devices.capabilities.on_off", "instance": "powerSwitch", "value": int(on)}
 
-    return Generic.__control_device__(api_key, "H7102", device_id, capability)
+    return await Generic.__control_device__(api_key, "H7102", device_id, capability)
 
 
-def toggle_oscillation(api_key: str, device_id: str, oscillation: bool) -> bool:
+async def toggle_oscillation(api_key: str, device_id: str, oscillation: bool) -> bool:
     capability = {"type": "devices.capabilities.toggle", "instance": "oscillationToggle", "value": int(oscillation)}
 
-    return Generic.__control_device__(api_key, "H7102", device_id, capability)
+    return await Generic.__control_device__(api_key, "H7102", device_id, capability)
 
 
-def change_mode_speed(api_key: str, device_id: str, mode: int = 0, value: int = 0) -> bool:
+async def change_mode_speed(api_key: str, device_id: str, mode: int = 0, value: int = 0) -> bool:
     mode_enum = {2: "custom", 3: "auto", 5: "sleep", 6: "nature"}
 
     responses = []
 
     if mode != 0 and mode in mode_enum.keys():
         capability = {"name": "mode", "value": mode}
-        response = Generic.__control_device__(api_key, "H7102", device_id, capability, v2_api=True)
+        response = await Generic.__control_device__(api_key, "H7102", device_id, capability, v2_api=True)
         responses.append(response)
 
     if value in range(1, 9):
         capability = {"name": "gear", "value": value}
-        response = Generic.__control_device__(api_key, "H7102", device_id, capability, v2_api=True)
+        response = await Generic.__control_device__(api_key, "H7102", device_id, capability, v2_api=True)
         responses.append(response)
 
     return all(responses)
