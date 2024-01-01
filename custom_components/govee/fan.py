@@ -86,6 +86,27 @@ class GoveeFan(FanEntity):
             self._attr_oscillating = current_value
             log.warning(f"Failed setting oscillation to {oscillating}")
 
+    '''async def async_turn_on(self, percentage: int | None = None, **kwargs: Any) -> None:
+        current_value_on: bool = self._attr_is_on
+        current_value_pct: int = self._attr_percentage
+
+        self._attr_is_on = True
+        self._attr_percentage = percentage
+
+        success = await H7102.on_off(self.api_key, self.device_id, True)
+
+        if success:
+            log.info(f"Set is_on state to {self._attr_is_on} and it should be True")
+
+        if percentage is not None:
+            success = self.async_set_percentage(percentage)
+            if success:
+                log.info(f"Set percentage to {self._attr_percentage} and it should be {percentage}")
+            else:
+                self._attr_is_on = current_value_on
+                self._attr_percentage = self._attr_percentage
+                log.warning(f"Failed to set percentage to {percentage}")'''
+
     async def async_turn_off(self, **kwargs: Any) -> None:
         current_value = self._attr_is_on
 
