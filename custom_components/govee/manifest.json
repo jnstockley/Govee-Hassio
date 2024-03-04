@@ -9,7 +9,7 @@
   "documentation": "https://www.home-assistant.io/integrations/govee",
   "homekit": {},
   "iot_class": "cloud_polling",
-  "requirements": ["httpx==0.25.0"],
+  "requirements": ["httpx"],
   "ssdp": [],
   "version": "0.1.0",
   "zeroconf": []
