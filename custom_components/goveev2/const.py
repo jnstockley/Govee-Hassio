@@ -1,5 +1,5 @@
 """Constants for the Govee integration."""
 
-DOMAIN = "govee_v2"
+DOMAIN = "goveev2"
 
 SUPPORTED_DEVICES = ['H5179', 'H7102']

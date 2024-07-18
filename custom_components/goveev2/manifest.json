@@ -1,5 +1,5 @@
 {
-  "domain": "govee_v2",
+  "domain": "goveev2",
   "name": "Govee V2",
   "codeowners": ["@jnstockley"],
   "dependencies": [],
