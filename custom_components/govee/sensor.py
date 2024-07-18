@@ -1,85 +1,79 @@
-"""Platform for sensor integration."""
-from __future__ import annotations
-
 import logging
+from datetime import datetime
 
-from custom_components.govee.devices import H5179
-import voluptuous as vol
-
+from homeassistant.const import CONF_DEVICE_ID, CONF_API_KEY, CONF_NAME, UnitOfTemperature, PERCENTAGE
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import ConfigType
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import DiscoveryInfoType
 import homeassistant.helpers.config_validation as cv
-
+import voluptuous as vol
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
     PLATFORM_SCHEMA
 )
-from homeassistant.const import UnitOfTemperature, PERCENTAGE
-from homeassistant.core import HomeAssistant
-from homeassistant.const import CONF_DEVICE_ID, CONF_API_KEY
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+
+from custom_components.govee.devices.H5179 import H5179
+
+log = logging.getLogger()
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_DEVICE_ID): cv.string,
     vol.Required(CONF_API_KEY): cv.string,
+    vol.Required(CONF_NAME): cv.string,
 })
 
 
-log = logging.getLogger()
-
-
-def setup_platform(
-        hass: HomeAssistant,
-        config: ConfigType,
-        add_entities: AddEntitiesCallback,
-        discovery_info: DiscoveryInfoType | None = None
-) -> None:
-    """Set up the sensor platform."""
-
-    device_id = config[CONF_DEVICE_ID]
+def setup_platform(hass: HomeAssistant, config: ConfigType, add_entities: AddEntitiesCallback,
+                   discovery_info: DiscoveryInfoType | None = None) -> None:
+    device = config[CONF_DEVICE_ID]
+    sku = config[CONF_NAME]
     api_key = config[CONF_API_KEY]
 
-    add_entities([H5179TempSensor(device_id, api_key), H5179HumiditySensor(device_id, api_key)])
 
 
-class H5179TempSensor(SensorEntity):
-    """Representation of a Sensor."""
+    add_entities([GoveeTemperature(device, sku, api_key), GoveeHumidity(device, sku, api_key)])
 
+
+class GoveeTemperature(SensorEntity):
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_last_reset = datetime.now()
+    _attr_native_unit_of_measurement = UnitOfTemperature.FAHRENHEIT
+    _attr_native_value = -999
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 2
     _attr_unique_id = f"{CONF_DEVICE_ID}-temp"
     _attr_name = "Temperature"
-    _attr_native_unit_of_measurement = UnitOfTemperature.FAHRENHEIT
-    _attr_device_class = SensorDeviceClass.TEMPERATURE
-    _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, device_id: str, api_key:str) -> None:
-        self._device_id = device_id
-        self._api_key = api_key
+    def __init__(self, device: str, sku: str, api_key: str) -> None:
+        self.device_id = device
+        self.sku = sku
+        self.api_key = api_key
 
-    def update(self) -> None:
-        """Fetch new state data for the sensor.
-
-        This is the only method that should fetch new data for Home Assistant.
-        """
-        self._attr_native_value = H5179.get_data(api_key=self._api_key, device_id=self._device_id).temperature
+    def update(self):
+        device = H5179(api_key=self.api_key, sku=self.sku, device=self.device_id).update()
+        self._attr_native_value = device.temperature
+        _attr_last_reset = datetime.now()
 
 
-class H5179HumiditySensor(SensorEntity):
-    """Representation of a Sensor."""
-
-    _attr_name = "Humidity"
-    _attr_unique_id = f"{CONF_DEVICE_ID}-humidity"
-    _attr_native_unit_of_measurement = PERCENTAGE
+class GoveeHumidity(SensorEntity):
     _attr_device_class = SensorDeviceClass.HUMIDITY
+    _attr_last_reset = datetime.now()
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_native_value = -1
     _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 1
+    _attr_unique_id = f"{CONF_DEVICE_ID}-humidity"
+    _attr_name = "Humidity"
 
-    def __init__(self, device_id: str, api_key:str) -> None:
-        self._device_id = device_id
-        self._api_key = api_key
+    def __init__(self, device: str, sku: str, api_key: str) -> None:
+        self.device_id = device
+        self.sku = sku
+        self.api_key = api_key
 
-    def update(self) -> None:
-        """Fetch new state data for the sensor.
-
-        This is the only method that should fetch new data for Home Assistant.
-        """
-        self._attr_native_value = H5179.get_data(api_key=self._api_key, device_id=self._device_id).humidity
+    def update(self):
+        device = H5179(api_key=self.api_key, sku=self.sku, device=self.device_id).update()
+        self._attr_native_value = device.humidity
+        _attr_last_reset = datetime.now()

@@ -3,7 +3,7 @@ from typing import Literal
 
 import requests
 
-from custom_components.govee.devices.Exceptions import UnauthorizedException, InvalidDeviceException
+from custom_components.govee_old.devices.Exceptions import UnauthorizedException, InvalidDeviceException
 
 BASE_URL = "https://openapi.api.govee.com"
 BASE_URL_V2 = "https://developer-api.govee.com"
@@ -12,7 +12,7 @@ log = logging.getLogger()
 
 def __get_devices__(api_key) -> dict:
     url = f"{BASE_URL}/router/api/v1/user/devices"
-    headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "openapi.api.govee.com"}
+    headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "openapi.api.govee_old.com"}
 
     response = __send_request__(url, 'GET', headers=headers)
 
@@ -32,7 +32,7 @@ def __get_devices__(api_key) -> dict:
 
 def __get_data__(api_key: str, sku: str, device_id: str) -> dict:
     url = f"{BASE_URL}/router/api/v1/device/state"
-    headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "openapi.api.govee.com"}
+    headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "openapi.api.govee_old.com"}
     body = {"requestId": "uuid", "payload": {"sku": sku, "device": device_id}}
 
     return __send_request__(url, 'POST', headers, body)
@@ -41,7 +41,7 @@ def __get_data__(api_key: str, sku: str, device_id: str) -> dict:
 def __control_device__(api_key: str, sku: str, device_id: str, capability: dict, v2_api: bool = False) -> bool:
     if v2_api:
         url = f"{BASE_URL_V2}/v1/appliance/devices/control"
-        headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "developer-api.govee.com"}
+        headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "developer-api.govee_old.com"}
         body = {"model": sku, "cmd": capability, "device": device_id}
 
         response = __send_request_v2__(url, headers, body)
@@ -55,7 +55,7 @@ def __control_device__(api_key: str, sku: str, device_id: str, capability: dict,
             return False
     else:
         url = f"{BASE_URL}/router/api/v1/device/control"
-        headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "openapi.api.govee.com"}
+        headers = {"Govee-API-Key": api_key, "Content-Type": "application/json", "Host": "openapi.api.govee_old.com"}
         body = {"requestId": "uuid", "payload": {"sku": sku, "device": device_id, "capability": capability}}
 
         expected_value = capability['value']

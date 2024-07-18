@@ -1,68 +1,118 @@
-# GoveeLife 36'' Smart Tower Fan
-# https://www.goveelife.com/products/goveelife-smart-home-appliances-H7102
-import logging
+"""Govee Cloud API Implementation for Smart Tower Fan"""
+from dataclasses import dataclass
 
-from custom_components.govee.devices import Generic
+from custom_components.govee.devices import GoveeAPIUtil
 
-log = logging.getLogger()
+
+@dataclass
+class H7102_Device:
+    power_state: bool
+    oscillation_state: bool
+    work_mode: int
+    work_mode_enum: str
+    mode_value: int
+    percentage: float
 
 
 class H7102:
-    def __init__(self, data: dict):
-        payload: dict = data['payload']
-        capabilities: dict = payload['capabilities']
-        self.sku = payload['sku']
-        self.device = payload['device']
-        for capability in capabilities:
-            if capability['type'] == 'devices.capabilities.online':
-                self.online: bool = bool(capability['state']['value'])
-            elif capability['type'] == 'devices.capabilities.on_off':
-                self.on: bool = bool(int(capability['state']['value']))
-            elif capability['type'] == 'devices.capabilities.toggle':
-                self.oscillation: bool = bool(capability['state']['value'])
-            elif capability['type'] == 'devices.capabilities.work_mode':
-                self.work_mode: dict[str: int] = {'mode': capability['state']['value']['workMode'],
-                                                  'value': capability['state']['value']['modeValue']}
-            else:
-                log.warning(f"Unexpected capability found {capability['type']}")
+    work_mode_dict = {1: "Normal", 5: "Sleep", 6: "Nature", 2: "Custom"}
 
-    def __str__(self):
-        return (f'SKU: {self.sku}, Device: {self.device}, Online: {self.online}, On: {self.on}, '
-                f'Oscillation: {self.oscillation}, Work Mode: {self.work_mode}')
+    def __init__(self, api_key: str, sku: str, device: str):
+        self.api_key = api_key
+        self.sku = sku
+        self.device = device
 
+    def turn_on(self):
+        capability = {"type": "devices.capabilities.on_off", "instance": "powerSwitch", "value": 1}
 
-BASE_URL = "https://openapi.api.govee.com"
+        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
 
+        if success:
+            return self.update()
 
-def get_data(api_key: str, device_id: str) -> H7102:
-    data = Generic.__get_data__(api_key, "H7102", device_id)
+    def turn_off(self):
+        capability = {"type": "devices.capabilities.on_off", "instance": "powerSwitch", "value": 0}
 
-    return H7102(data)
+        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
 
+        if success:
+            return self.update()
 
-def on_off(api_key: str, device_id: str, on: bool) -> bool:
-    capability = {"type": "devices.capabilities.on_off", "instance": "powerSwitch", "value": int(on)}
+    def get_power_state(self) -> bool:
+        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
 
-    return Generic.__control_device__(api_key, "H7102", device_id, capability)
+        for capability in device_state:
+            if capability["instance"] == "powerSwitch":
+                return int(capability["state"]["value"]) == 1
 
+    def turn_on_oscillation(self):
+        capability = {"type": "devices.capabilities.toggle", "instance": "oscillationToggle", "value": 1}
 
-def toggle_oscillation(api_key: str, device_id: str, oscillation: bool) -> bool:
-    capability = {"type": "devices.capabilities.toggle", "instance": "oscillationToggle", "value": int(oscillation)}
+        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
 
-    return Generic.__control_device__(api_key, "H7102", device_id, capability)
+        if success:
+            return self.update()
 
+    def turn_off_oscillation(self):
+        capability = {"type": "devices.capabilities.toggle", "instance": "oscillationToggle", "value": 0}
 
-def change_mode_speed(api_key: str, device_id: str, mode: int = 0, value: int = 0) -> bool:
-    mode_enum = {2: "custom", 3: "auto", 5: "sleep", 6: "nature"}
+        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
 
-    responses = []
+        if success:
+            return self.update()
 
-    if mode != 0 and mode in mode_enum.keys():
-        capability = {"name": "mode", "value": mode}
-        responses.append(Generic.__control_device__(api_key, "H7102", device_id, capability, v2_api=True))
+    def get_oscillation_state(self):
+        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
 
-    if value in range(1, 9):
-        capability = {"name": "gear", "value": value}
-        responses.append(Generic.__control_device__(api_key, "H7102", device_id, capability, v2_api=True))
+        for capability in device_state:
+            if capability["instance"] == "oscillationToggle":
+                return int(capability["state"]["value"]) == 1
 
-    return all(responses)
+    # TODO Be able to set with percentage, and enum
+    def set_work_mode(self, work_mode: int, mode_value: int):
+        capability = {"type": "devices.capabilities.work_mode", "instance": "workMode",
+                      "value": {"workMode": work_mode, "modeValue": mode_value}}
+
+        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
+
+        if success:
+            return self.update()
+
+    def get_work_mode(self):
+        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+
+        for capability in device_state:
+            if capability["instance"] == "workMode":
+                work_mode = int(capability["state"]["value"]["workMode"])
+                mode_value = int(capability["state"]["value"]["modeValue"])
+                try:
+                    mode_enum = self.work_mode_dict[work_mode]
+                except KeyError:
+                    mode_enum = "Unknown"
+
+                return {"work_mode": work_mode, "mode_enum": mode_enum, "mode_value": mode_value,
+                        "percentage": (mode_value / 8) * 100}
+
+    def update(self):
+        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+
+        for capability in device_state:
+            if capability["instance"] == "workMode":
+                work_mode = int(capability["state"]["value"]["workMode"])
+                mode_value = int(capability["state"]["value"]["modeValue"])
+                try:
+                    mode_enum = self.work_mode_dict[work_mode]
+                except KeyError:
+                    mode_enum = "Unknown"
+
+                work_mode = work_mode
+                work_mode_enum = mode_enum
+                mode_value = mode_value
+                percentage = (mode_value / 8) * 100
+            elif capability["instance"] == "oscillationToggle":
+                oscillation_state = int(capability["state"]["value"]) == 1
+            elif capability["instance"] == "powerSwitch":
+                power_state = int(capability["state"]["value"]) == 1
+
+        return H7102_Device(power_state=power_state, oscillation_state=oscillation_state, work_mode=work_mode,
+                            work_mode_enum=work_mode_enum, mode_value=mode_value, percentage=percentage)

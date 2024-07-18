@@ -1,5 +1,5 @@
-from custom_components.govee.const import SUPPORTED_DEVICES
-from custom_components.govee.devices import Generic
+from custom_components.govee_old.const import SUPPORTED_DEVICES
+from custom_components.govee_old.devices import Generic
 
 
 def get_devices():

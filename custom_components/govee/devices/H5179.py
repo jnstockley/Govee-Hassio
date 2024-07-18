@@ -1,37 +1,42 @@
-# Govee Wi-Fi Thermo-Hygrometer
-# https://us.govee.com/products/wi-fi-temperature-humidity-sensor
-import logging
+"""Govee Cloud API Implementation for Wi-Fi Thermometer"""
+from dataclasses import dataclass
 
-from custom_components.govee.devices import Generic
+from custom_components.govee.devices import GoveeAPIUtil
 
-log = logging.getLogger()
+
+@dataclass
+class H5179_Device:
+    temperature: float
+    humidity: int
 
 
 class H5179:
-    def __init__(self, data: dict):
-        payload: dict = data['payload']
-        capabilities: dict = payload['capabilities']
-        self.sku = payload['sku']
-        self.device = payload['device']
-        for capability in capabilities:
-            if capability['type'] == 'devices.capabilities.online':
-                self.online: bool = bool(capability['state']['value'])
-            elif (capability['type'] == 'devices.capabilities.property' and capability['instance']
-                  == 'sensorTemperature'):
-                self.temperature: float = (int(capability['state']['value'] / 100) * 1.8) + 32
-            elif capability['type'] == 'devices.capabilities.property' and capability['instance'] == 'sensorHumidity':
-                self.humidity: float = (int(capability['state']['value']['currentHumidity']) / 100)
-            else:
-                log.warning(f"Unexpected capability found {capability['type']}")
+    def __init__(self, api_key: str, sku: str, device: str):
+        self.api_key = api_key
+        self.sku = sku
+        self.device = device
 
-    def __str__(self):
-        return (f'SKU: {self.sku}, Device: {self.device}, Online: {self.online}, Temperature: {self.temperature}, '
-                f'Humidity: {self.humidity}')
+    def get_temperature(self) -> float:
+        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
 
+        for capability in device_state:
+            if capability["instance"] == "sensorTemperature":
+                return float(capability["state"]["value"])
 
-def get_data(api_key: str, device_id: str) -> H5179:
-    data = Generic.__get_data__(api_key, "H5179", device_id)
+    def get_humidity(self) -> int:
+        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
 
-    device = H5179(data)
+        for capability in device_state:
+            if capability["instance"] == "sensorHumidity":
+                return int(capability["state"]["value"]['currentHumidity'])
 
-    return device
+    def update(self):
+        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+
+        for capability in device_state:
+            if capability["instance"] == "sensorTemperature":
+                temperature = float(capability["state"]["value"])
+            elif capability["instance"] == "sensorHumidity":
+                humidity = int(capability["state"]["value"]['currentHumidity'])
+
+        return H5179_Device(temperature=temperature, humidity=humidity)

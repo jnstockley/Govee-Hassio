@@ -1,16 +1,10 @@
 {
-  "domain": "govee",
-  "name": "Govee",
-  "codeowners": [
-    "@jnstockley"
-  ],
-  "config_flow": false,
+  "domain": "govee_v2",
+  "name": "Govee V2",
+  "codeowners": ["@jnstockley"],
   "dependencies": [],
-  "documentation": "https://www.home-assistant.io/integrations/govee",
-  "homekit": {},
+  "documentation": "https://www.example.com",
+  "integration_type": "hub",
   "iot_class": "cloud_polling",
-  "requirements": ["requests==2.31.0"],
-  "ssdp": [],
-  "version": "0.1.0",
-  "zeroconf": []
+  "requirements": ["requests==2.31.0"]
 }
