@@ -1,7 +1,7 @@
 """Govee Cloud API Implementation for Wi-Fi Thermometer"""
 from dataclasses import dataclass
 
-from custom_components.govee_v2.devices import GoveeAPIUtil
+from custom_components.goveev2.devices import GoveeAPIUtil
 
 
 @dataclass

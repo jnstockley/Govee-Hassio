@@ -15,7 +15,7 @@ from homeassistant.components.sensor import (
     PLATFORM_SCHEMA
 )
 
-from custom_components.govee_v2.devices.H5179 import H5179
+from custom_components.goveev2.devices.H5179 import H5179
 
 log = logging.getLogger()
 
