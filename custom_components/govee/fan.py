@@ -111,6 +111,9 @@ class GoveeFan(FanEntity):
         features = FanEntityFeature(0)
         features |= FanEntityFeature.SET_SPEED
         features |= FanEntityFeature.OSCILLATE
+        features |= FanEntityFeature.TURN_ON
+        features |= FanEntityFeature.TURN_OFF
+        features |= FanEntityFeature.PRESET_MODE
 
         return features
 
