@@ -14,7 +14,6 @@ from homeassistant.components.fan import (
     PLATFORM_SCHEMA,
     FanEntity,
     FanEntityFeature,
-    FanStateClass
 )
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from custom_components.govee.devices.H7102 import H7102, H7102_Device
