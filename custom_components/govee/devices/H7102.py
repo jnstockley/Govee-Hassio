@@ -22,64 +22,64 @@ class H7102:
         self.sku = sku
         self.device = device
 
-    def turn_on(self):
+    async def turn_on(self):
         capability = {"type": "devices.capabilities.on_off", "instance": "powerSwitch", "value": 1}
 
-        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
 
         if success:
             return self.update()
 
-    def turn_off(self):
+    async def turn_off(self):
         capability = {"type": "devices.capabilities.on_off", "instance": "powerSwitch", "value": 0}
 
-        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
 
         if success:
             return self.update()
 
-    def get_power_state(self) -> bool:
-        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+    async def get_power_state(self) -> bool:
+        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
 
         for capability in device_state:
             if capability["instance"] == "powerSwitch":
                 return int(capability["state"]["value"]) == 1
 
-    def turn_on_oscillation(self):
+    async def turn_on_oscillation(self):
         capability = {"type": "devices.capabilities.toggle", "instance": "oscillationToggle", "value": 1}
 
-        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
 
         if success:
             return self.update()
 
-    def turn_off_oscillation(self):
+    async def turn_off_oscillation(self):
         capability = {"type": "devices.capabilities.toggle", "instance": "oscillationToggle", "value": 0}
 
-        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
 
         if success:
             return self.update()
 
-    def get_oscillation_state(self):
-        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+    async def get_oscillation_state(self):
+        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
 
         for capability in device_state:
             if capability["instance"] == "oscillationToggle":
                 return int(capability["state"]["value"]) == 1
 
     # TODO Be able to set with percentage, and enum
-    def set_work_mode(self, work_mode: int, mode_value: int):
+    async def set_work_mode(self, work_mode: int, mode_value: int):
         capability = {"type": "devices.capabilities.work_mode", "instance": "workMode",
                       "value": {"workMode": work_mode, "modeValue": mode_value}}
 
-        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
 
         if success:
             return self.update()
 
-    def get_work_mode(self):
-        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+    async def get_work_mode(self):
+        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
 
         for capability in device_state:
             if capability["instance"] == "workMode":
@@ -93,8 +93,15 @@ class H7102:
                 return {"work_mode": work_mode, "mode_enum": mode_enum, "mode_value": mode_value,
                         "percentage": (mode_value / 8) * 100}
 
-    def update(self):
-        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+    async def update(self):
+        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+
+        power_state = None
+        oscillation_state = None
+        work_mode = None
+        work_mode_enum = None
+        mode_value = None
+        percentage = None
 
         for capability in device_state:
             if capability["instance"] == "workMode":
