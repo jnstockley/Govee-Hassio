@@ -13,7 +13,7 @@ async def get_device_state(api_key: str, sku: str, device: str):
         headers = {'Govee-API-Key': api_key, 'Content-Type': 'application/json'}
         body = {"requestId": "uuid", "payload": {"sku": sku, "device": device}}
 
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient() as client:
 
             response = await client.post(f"{BASE_URL}/router/api/v1/device/state", headers=headers, json=body)
 
