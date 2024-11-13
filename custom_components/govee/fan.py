@@ -1,29 +1,22 @@
 """Platform for fan integration"""
-from __future__ import annotations
-
 import logging
 from datetime import timedelta
 from typing import Any
 
 import async_timeout
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-
-from custom_components.govee.devices.H7102 import H7102, H7102_Device
-
-import voluptuous as vol
-
-import homeassistant.helpers.config_validation as cv
-
-from homeassistant.const import CONF_DEVICE_ID, CONF_API_KEY, CONF_NAME
+from homeassistant.const import CONF_DEVICE_ID, CONF_API_KEY, CONF_NAME, UnitOfTemperature, PERCENTAGE
 from homeassistant.core import HomeAssistant
-
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import DiscoveryInfoType, ConfigType
+import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 from homeassistant.components.fan import (
     PLATFORM_SCHEMA,
     FanEntity,
     FanEntityFeature,
 )
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from custom_components.govee.devices.H7102 import H7102, H7102_Device
 
 log = logging.getLogger()
 
