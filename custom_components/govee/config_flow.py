@@ -15,7 +15,7 @@ from homeassistant.helpers import device_registry as dr
 
 
 from .const import DOMAIN
-from .devices import Generic
+#from .devices import Generic
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class PlaceholderHub:
         self.devices = None
 
     async def authenticate(self, api_key) -> bool:
-        devices = Generic.__get_devices__(api_key)
+        devices = [""]
         self.devices = devices
         """Test if we can authenticate with the host."""
         return len(devices) > 0
