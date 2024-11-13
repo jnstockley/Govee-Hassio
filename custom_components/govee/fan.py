@@ -14,7 +14,7 @@ import voluptuous as vol
 
 import homeassistant.helpers.config_validation as cv
 
-from homeassistant.const import CONF_DEVICE_ID, CONF_API_KEY, CONF_NAME, UnitOfSpeed, PERCENTAGE
+from homeassistant.const import CONF_DEVICE_ID, CONF_API_KEY, CONF_NAME
 from homeassistant.core import HomeAssistant
 
 from homeassistant.components.fan import (
@@ -45,7 +45,7 @@ async def async_setup_platform(hass: HomeAssistant, config: ConfigType, async_ad
 
     coordinator = MyCoordinator(hass, device)
 
-    await coordinator.async_config_entry_first_refresh()
+    await coordinator.async_refresh()
 
     new_device = await device.update()
 
