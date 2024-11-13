@@ -1,21 +1,22 @@
-"""Govee Cloud API Implementation for Smart Tower Fan"""
+"""Govee Cloud API Implementation for Smart Air Purifier"""
 from dataclasses import dataclass
 
 from custom_components.govee_v2.devices import GoveeAPIUtil
 
 
 @dataclass
-class H7102_Device:
+class H7126_Device:
     power_state: bool
-    oscillation_state: bool
     work_mode: int
     work_mode_enum: str
     mode_value: int
     percentage: float
+    filter_life_time: float
+    air_quality: int
 
 
-class H7102:
-    work_mode_dict = {1: "Normal", 5: "Sleep", 6: "Nature", 2: "Custom"}
+class H7126:
+    work_mode_dict = {1: "Sleeping", 2: "Low", 3: "High", 0: "Custom"}
 
     def __init__(self, api_key: str, sku: str, device: str):
         self.api_key = api_key
@@ -38,34 +39,11 @@ class H7102:
         if success:
             return self.update()
 
-    def get_power_state(self) -> bool:
+    def get_power_state(self):
         device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
 
         for capability in device_state:
             if capability["instance"] == "powerSwitch":
-                return int(capability["state"]["value"]) == 1
-
-    def turn_on_oscillation(self):
-        capability = {"type": "devices.capabilities.toggle", "instance": "oscillationToggle", "value": 1}
-
-        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
-
-        if success:
-            return self.update()
-
-    def turn_off_oscillation(self):
-        capability = {"type": "devices.capabilities.toggle", "instance": "oscillationToggle", "value": 0}
-
-        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
-
-        if success:
-            return self.update()
-
-    def get_oscillation_state(self):
-        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
-
-        for capability in device_state:
-            if capability["instance"] == "oscillationToggle":
                 return int(capability["state"]["value"]) == 1
 
     # TODO Be able to set with percentage, and enum
@@ -91,7 +69,21 @@ class H7102:
                     mode_enum = "Unknown"
 
                 return {"work_mode": work_mode, "mode_enum": mode_enum, "mode_value": mode_value,
-                        "percentage": (mode_value / 8) * 100}
+                        "percentage": (mode_value / 4) * 100}
+
+    def get_filter_life_time(self):
+        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+
+        for capability in device_state:
+            if capability["instance"] == "filterLifeTime":
+                return float(capability["state"]["value"])
+
+    def get_air_quality(self):
+        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+
+        for capability in device_state:
+            if capability["instance"] == "airQuality":
+                return int(capability["state"]["value"])
 
     def update(self):
         device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
@@ -100,19 +92,17 @@ class H7102:
             if capability["instance"] == "workMode":
                 work_mode = int(capability["state"]["value"]["workMode"])
                 mode_value = int(capability["state"]["value"]["modeValue"])
+                percentage = (mode_value / 4) * 100
                 try:
                     mode_enum = self.work_mode_dict[work_mode]
                 except KeyError:
                     mode_enum = "Unknown"
-
-                work_mode = work_mode
-                work_mode_enum = mode_enum
-                mode_value = mode_value
-                percentage = (mode_value / 8) * 100
-            elif capability["instance"] == "oscillationToggle":
-                oscillation_state = int(capability["state"]["value"]) == 1
             elif capability["instance"] == "powerSwitch":
                 power_state = int(capability["state"]["value"]) == 1
+            elif capability["instance"] == "filterLifeTime":
+                filter_life_time = float(capability["state"]["value"])
+            elif capability["instance"] == "airQuality":
+                air_quality = int(capability["state"]["value"])
 
-        return H7102_Device(power_state=power_state, oscillation_state=oscillation_state, work_mode=work_mode,
-                            work_mode_enum=work_mode_enum, mode_value=mode_value, percentage=percentage)
+        return H7126_Device(power_state=power_state, work_mode=work_mode, mode_value=mode_value, percentage=percentage,
+                            filter_life_time=filter_life_time, air_quality=air_quality, work_mode_enum=mode_enum)

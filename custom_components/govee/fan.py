@@ -2,15 +2,19 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 from typing import Any
 
-from custom_components.govee.devices import H7102
+import async_timeout
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+
+from custom_components.govee.devices.H7102 import H7102, H7102_Device
 
 import voluptuous as vol
 
 import homeassistant.helpers.config_validation as cv
 
-from homeassistant.const import CONF_DEVICE_ID, CONF_API_KEY
+from homeassistant.const import CONF_DEVICE_ID, CONF_API_KEY, CONF_NAME, UnitOfSpeed, PERCENTAGE
 from homeassistant.core import HomeAssistant
 
 from homeassistant.components.fan import (
@@ -27,42 +31,86 @@ log = logging.getLogger()
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_DEVICE_ID): cv.string,
     vol.Required(CONF_API_KEY): cv.string,
+    vol.Required(CONF_NAME): cv.string,
 })
 
 
-async def async_setup_platform(
-        hass: HomeAssistant,
-        config: ConfigType,
-        async_add_entities: AddEntitiesCallback,
-        discovery_info: DiscoveryInfoType | None = None
-) -> None:
-    """Set up the sensor platform."""
+async def async_setup_platform(hass: HomeAssistant, config: ConfigType, async_add_entities: AddEntitiesCallback,
+                               discovery_info: DiscoveryInfoType | None = None) -> None:
     device_id = config[CONF_DEVICE_ID]
+    sku = config[CONF_NAME]
     api_key = config[CONF_API_KEY]
 
-    device = await H7102.get_data(api_key, device_id)
+    device = H7102(api_key=api_key, sku=sku, device=device_id)
 
-    async_add_entities([GoveeFan(api_key, device_id, device)])
+    coordinator = MyCoordinator(hass, device)
+
+    await coordinator.async_config_entry_first_refresh()
+
+    new_device = await device.update()
+
+    async_add_entities(
+        [GoveeFan(device_id, sku, api_key, new_device)])
+
+
+class MyCoordinator(DataUpdateCoordinator):
+
+    def __init__(self, hass, device):
+        """Initialize my coordinator."""
+        super().__init__(
+            hass,
+            log,
+            # Name of the data. For logging purposes.
+            name="Govee W-Fi Tower Fan",
+            # Polling interval. Will only be polled if there are subscribers.
+            update_interval=timedelta(minutes=5),
+            # Set always_update to `False` if the data returned from the
+            # api can be compared via `__eq__` to avoid duplicate updates
+            # being dispatched to listeners
+            always_update=True
+        )
+
+        self.device = device
+
+    async def _async_update_data(self):
+        try:
+            # Note: asyncio.TimeoutError and aiohttp.ClientError are already
+            # handled by the data update coordinator.
+            async with async_timeout.timeout(10):
+                # Grab active context variables to limit data required to be fetched from API
+                # Note: using context is not required if there is no need or ability to limit
+                # data retrieved from API.
+                return await self.device.update()
+        except Exception as e:
+            log.error(f"Failed to update device: {e}")
+            raise e
+
 
 
 class GoveeFan(FanEntity):
     reversed_mode_enum = {1: "Normal", 2: "Custom", 3: "Normal", 5: "Sleep", 6: "Nature"}
 
+    _attr_current_direction = None
+    _attr_is_on = False
+    _attr_oscillating = False
+    _attr_percentage = 0
+    _attr_preset_mode = None
+    _attr_preset_modes = reversed_mode_enum.values()
+    _attr_speed_count = len(reversed_mode_enum.keys())
     _attr_unique_id = CONF_DEVICE_ID
     _attr_name = "Tower Fan"
 
-    def __init__(self, api_key: str, device_id: str, device: H7102) -> None:
-        self.api_key = api_key
+    def __init__(self, device_id: str, sku: str, api_key: str, device: H7102_Device) -> None:
+        log.info(f"Setting up fan: {device_id} - {sku} - {api_key}")
         self.device_id = device_id
+        self.sku = sku
+        self.api_key = api_key
 
-        self._attr_is_on = device.on
-        self._attr_oscillating = device.oscillation
+        self._attr_is_on = device.power_state
+        self._attr_oscillating = device.oscillation_state
+        self._attr_percentage = device.percentage
+        self._attr_preset_mode = self.reversed_mode_enum[device.work_mode]
 
-        if self._attr_is_on:
-            self._attr_percentage = (device.work_mode['value'] / 8) * 100
-        else:
-            self._attr_percentage = 0
-        self._attr_speed_count = 3
 
     @property
     def supported_features(self) -> FanEntityFeature:
@@ -74,17 +122,14 @@ class GoveeFan(FanEntity):
         return features
 
     async def async_oscillate(self, oscillating: bool) -> None:
-        current_value: bool = self._attr_oscillating
-
-        self._attr_oscillating = oscillating
-
-        success = await H7102.toggle_oscillation(self.api_key, self.device_id, oscillating)
-
-        if success:
-            log.info(f"Set Oscillation to {self._attr_oscillating} and it should be {oscillating}")
+        if oscillating:
+            device = await H7102(self.api_key, self.sku, self.device_id).turn_on_oscillation()
+            log.info(f"Oscillation turned on: {device}")
+            self._attr_oscillating = device.oscillation
         else:
-            self._attr_oscillating = current_value
-            log.warning(f"Failed setting oscillation to {oscillating}")
+            device = await H7102(self.api_key, self.sku, self.device_id).turn_off_oscillation()
+            log.info(f"Oscillation turned off: {device}")
+            self._attr_oscillating = device.oscillation
 
     '''async def async_turn_on(self, percentage: int | None = None, **kwargs: Any) -> None:
         current_value_on: bool = self._attr_is_on
@@ -108,47 +153,23 @@ class GoveeFan(FanEntity):
                 log.warning(f"Failed to set percentage to {percentage}")'''
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        current_value = self._attr_is_on
+        device = await H7102(self.api_key, self.sku, self.device_id).turn_off()
+        log.info(f"Turned off: {device}")
+        self._attr_is_on = device.power_state
 
-        self._attr_is_on = False
-
-        success = await H7102.on_off(self.api_key, self.device_id, False)
-
-        if success:
-            log.info(f"Set is_on to {self._attr_is_on} and it should be False")
-        else:
-            self._attr_is_on = current_value
-            log.warning(f"Failed to set is_on to False")
 
     async def async_set_percentage(self, percentage: int) -> None:
-        current_value_on = self._attr_is_on
-        current_value_pct = self._attr_percentage
+        device = await H7102(self.api_key, self.sku, self.device_id).update()
+        log.info(f"Device: {device}")
 
-        speed: int = int((percentage / 100) * 8)
-
-        self._attr_is_on = True
-        self._attr_percentage = percentage
-
-        success = await H7102.change_mode_speed(self.api_key, self.device_id, value=speed)
-
-        if success:
-            log.info(f"Set percentage to {self._attr_percentage} and it should be {percentage}")
-        else:
-            self._attr_is_on = current_value_on
-            self._attr_percentage = current_value_pct
-            log.warning(f"Failed to set percentage to {percentage}")
+        device = await device.set_work_mode(device.get_work_mode()['work_mode'], percentage)
+        self._attr_percentage = device.percentage
 
     async def async_update(self) -> None:
-        log.info("Running async_update...")
-        device = await H7102.get_data(api_key=self.api_key, device_id=self.device_id)
-
-        self._attr_is_on = device.on
-        if not self._attr_is_on:
-            self._attr_percentage = 0
-        else:
-            self._attr_percentage = (device.work_mode['value'] / 8) * 100
-        self._attr_oscillating = device.oscillation
-
-        log.info(f"Set is_on to {self._attr_is_on}")
-        log.info(f"Set percentage to {self._attr_percentage}")
-        log.info(f"Set oscillating to {self._attr_oscillating}")
+        log.info(f"Updating fan for device {self.device_id} - {self.sku}")
+        device = await H7102(self.api_key, self.sku, self.device_id).update()
+        log.info(f"Device: {device}")
+        self._attr_is_on = device.power_state
+        self._attr_oscillating = device.oscillation_state
+        self._attr_percentage = device.percentage
+        self._attr_preset_mode = self.reversed_mode_enum[device.work_mode]
