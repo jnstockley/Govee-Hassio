@@ -2,7 +2,7 @@
 import logging
 from dataclasses import dataclass
 
-from custom_components.govee_v2.devices import GoveeAPIUtil
+from custom_components.govee.devices import GoveeAPIUtil
 
 
 log = logging.getLogger()
