@@ -119,11 +119,11 @@ class GoveeFan(FanEntity):
 
     async def async_oscillate(self, oscillating: bool) -> None:
         if oscillating:
-            device = await H7102(self.api_key, self.sku, self.device_id).turn_on_oscillation()
+            device = await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_on_oscillation()
             log.info(f"Oscillation turned on: {device}")
             self._attr_oscillating = device.oscillation
         else:
-            device = await H7102(self.api_key, self.sku, self.device_id).turn_off_oscillation()
+            device = await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off_oscillation()
             log.info(f"Oscillation turned off: {device}")
             self._attr_oscillating = device.oscillation
 
@@ -149,13 +149,13 @@ class GoveeFan(FanEntity):
                 log.warning(f"Failed to set percentage to {percentage}")'''
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        device = await H7102(self.api_key, self.sku, self.device_id).turn_off()
+        device = await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off()
         log.info(f"Turned off: {device}")
         self._attr_is_on = device.power_state
 
 
     async def async_set_percentage(self, percentage: int) -> None:
-        device = await H7102(self.api_key, self.sku, self.device_id).update()
+        device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
         log.info(f"Device: {device}")
 
         device = await device.set_work_mode(device.get_work_mode()['work_mode'], percentage)
@@ -163,7 +163,7 @@ class GoveeFan(FanEntity):
 
     async def async_update(self) -> None:
         log.info(f"Updating fan for device {self.device_id} - {self.sku}")
-        device = await H7102(self.api_key, self.sku, self.device_id).update()
+        device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
         log.info(f"Device: {device}")
         self._attr_is_on = device.power_state
         self._attr_oscillating = device.oscillation_state
