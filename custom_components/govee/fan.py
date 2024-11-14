@@ -90,8 +90,8 @@ class GoveeFan(FanEntity):
     _attr_preset_mode = None
     _attr_preset_modes = list(reversed_mode_enum.values())
     _attr_speed_count = len(reversed_mode_enum.keys())
-    _attr_unique_id = CONF_DEVICE_ID
-    _attr_name = "Tower Fan"
+    _attr_unique_id = f"{CONF_DEVICE_ID}-{CONF_NAME}"
+    _attr_name = "Govee Smart Tower Fan"
 
     def __init__(self, device_id: str, sku: str, api_key: str, device: H7102_Device) -> None:
         log.info(f"Setting up fan: {device_id} - {sku} - {api_key}")
