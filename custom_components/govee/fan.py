@@ -88,7 +88,7 @@ class GoveeFan(FanEntity):
     _attr_oscillating = False
     _attr_percentage = 0
     _attr_preset_mode = None
-    _attr_preset_modes = reversed_mode_enum.values()
+    _attr_preset_modes = list(reversed_mode_enum.values())
     _attr_speed_count = len(reversed_mode_enum.keys())
     _attr_unique_id = CONF_DEVICE_ID
     _attr_name = "Tower Fan"
