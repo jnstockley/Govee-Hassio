@@ -34,7 +34,7 @@ async def async_setup_platform(hass: HomeAssistant, config: ConfigType, async_ad
     sku = config[CONF_NAME]
     api_key = config[CONF_API_KEY]
 
-    device = H7102(api_key=api_key, sku=sku, device=device_id)
+    device = H7102(api_key=api_key, sku=sku, device=device_id, hass=hass)
 
     coordinator = MyCoordinator(hass, device)
 
