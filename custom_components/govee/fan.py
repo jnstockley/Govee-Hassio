@@ -155,10 +155,10 @@ class GoveeFan(FanEntity):
 
 
     async def async_set_percentage(self, percentage: int) -> None:
-        #device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-        #log.info(f"Device: {device}")
+        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
+        log.info(f"Device: {device}")
 
-        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(1, percentage)
+        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(device.work_mode, int(percentage / 100) * 8)
         device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
         self._attr_percentage = device.percentage
 
@@ -169,4 +169,4 @@ class GoveeFan(FanEntity):
         self._attr_is_on = device.power_state
         self._attr_oscillating = device.oscillation_state
         self._attr_percentage = device.percentage
-        self._attr_preset_mode = 'Normal'#self.reversed_mode_enum[device.work_mode]
+        self._attr_preset_mode = self.reversed_mode_enum[device.work_mode]
