@@ -94,7 +94,7 @@ class H7102:
                 return {"work_mode": work_mode, "mode_enum": mode_enum, "mode_value": mode_value,
                         "percentage": (mode_value / 8) * 100}
 
-    async def update(self):
+    async def update(self) -> H7102_Device:
         device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device, self.hass)
 
         power_state = None

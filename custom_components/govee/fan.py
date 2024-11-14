@@ -119,51 +119,50 @@ class GoveeFan(FanEntity):
 
     async def async_oscillate(self, oscillating: bool) -> None:
         if oscillating:
-            device = await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_on_oscillation()
+            device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_on_oscillation()
             log.info(f"Oscillation turned on: {device}")
-            self._attr_oscillating = device.oscillation
+            self._attr_oscillating = device.oscillation_state
         else:
-            device = await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off_oscillation()
+            device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off_oscillation()
             log.info(f"Oscillation turned off: {device}")
-            self._attr_oscillating = device.oscillation
+            self._attr_oscillating = device.oscillation_state
 
-    '''async def async_turn_on(self, percentage: int | None = None, **kwargs: Any) -> None:
-        current_value_on: bool = self._attr_is_on
-        current_value_pct: int = self._attr_percentage
+    async def async_turn_on(self, percentage: int | None = None, **kwargs: Any) -> None:
+        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
+        log.info(f"Device: {device}")
 
-        self._attr_is_on = True
-        self._attr_percentage = percentage
+        await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_on()
 
-        success = await H7102.on_off(self.api_key, self.device_id, True)
+        if device.oscillation_state:
+            await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_on_oscillation()
+        else:
+            await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off_oscillation()
 
-        if success:
-            log.info(f"Set is_on state to {self._attr_is_on} and it should be True")
+        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(device.work_mode, percentage)
 
-        if percentage is not None:
-            success = self.async_set_percentage(percentage)
-            if success:
-                log.info(f"Set percentage to {self._attr_percentage} and it should be {percentage}")
-            else:
-                self._attr_is_on = current_value_on
-                self._attr_percentage = self._attr_percentage
-                log.warning(f"Failed to set percentage to {percentage}")'''
+        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
+        self._attr_is_on = device.power_state
+        self._attr_oscillating = device.oscillation_state
+        self._attr_percentage = device.percentage
+        self._attr_preset_mode = self.reversed_mode_enum[device.work_mode]
+
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        device = await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off()
+        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off()
         log.info(f"Turned off: {device}")
         self._attr_is_on = device.power_state
 
 
     async def async_set_percentage(self, percentage: int) -> None:
-        device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
+        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
         log.info(f"Device: {device}")
 
-        device = await device.set_work_mode(device.get_work_mode()['work_mode'], percentage)
+        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(device.work_mode, percentage)
         self._attr_percentage = device.percentage
 
     async def async_update(self) -> None:
         log.info(f"Updating fan for device {self.device_id} - {self.sku}")
-        device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
+        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
         log.info(f"Device: {device}")
         self._attr_is_on = device.power_state
         self._attr_oscillating = device.oscillation_state
