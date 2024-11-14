@@ -119,13 +119,13 @@ class GoveeFan(FanEntity):
 
     async def async_oscillate(self, oscillating: bool) -> None:
         if oscillating:
-            device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_on_oscillation()
-            log.info(f"Oscillation turned on: {device}")
-            self._attr_oscillating = device.oscillation_state
+            await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_on_oscillation()
         else:
-            device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off_oscillation()
-            log.info(f"Oscillation turned off: {device}")
-            self._attr_oscillating = device.oscillation_state
+            await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off_oscillation()
+
+        log.info(f"Oscillation: {oscillating}")
+        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
+        self._attr_oscillating = device.oscillation_state
 
     async def async_turn_on(self, percentage: int | None = None, **kwargs: Any) -> None:
         device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
@@ -148,7 +148,8 @@ class GoveeFan(FanEntity):
 
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off()
+        await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off()
+        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
         log.info(f"Turned off: {device}")
         self._attr_is_on = device.power_state
 
@@ -157,7 +158,8 @@ class GoveeFan(FanEntity):
         device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
         log.info(f"Device: {device}")
 
-        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(device.work_mode, percentage)
+        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(device.work_mode, percentage)
+        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
         self._attr_percentage = device.percentage
 
     async def async_update(self) -> None:
