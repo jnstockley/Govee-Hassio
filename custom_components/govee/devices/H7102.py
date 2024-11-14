@@ -17,15 +17,16 @@ class H7102_Device:
 class H7102:
     work_mode_dict = {1: "Normal", 5: "Sleep", 6: "Nature", 2: "Custom"}
 
-    def __init__(self, api_key: str, sku: str, device: str):
+    def __init__(self, api_key: str, sku: str, device: str, hass):
         self.api_key = api_key
         self.sku = sku
         self.device = device
+        self.hass = hass
 
     async def turn_on(self):
         capability = {"type": "devices.capabilities.on_off", "instance": "powerSwitch", "value": 1}
 
-        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass)
 
         if success:
             return await self.update()
@@ -33,13 +34,13 @@ class H7102:
     async def turn_off(self):
         capability = {"type": "devices.capabilities.on_off", "instance": "powerSwitch", "value": 0}
 
-        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass)
 
         if success:
             return await self.update()
 
     async def get_power_state(self) -> bool:
-        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device, self.hass)
 
         for capability in device_state:
             if capability["instance"] == "powerSwitch":
@@ -48,7 +49,7 @@ class H7102:
     async def turn_on_oscillation(self):
         capability = {"type": "devices.capabilities.toggle", "instance": "oscillationToggle", "value": 1}
 
-        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass)
 
         if success:
             return await self.update()
@@ -56,13 +57,13 @@ class H7102:
     async def turn_off_oscillation(self):
         capability = {"type": "devices.capabilities.toggle", "instance": "oscillationToggle", "value": 0}
 
-        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass)
 
         if success:
             return await self.update()
 
     async def get_oscillation_state(self):
-        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device, self.hass)
 
         for capability in device_state:
             if capability["instance"] == "oscillationToggle":
@@ -73,13 +74,13 @@ class H7102:
         capability = {"type": "devices.capabilities.work_mode", "instance": "workMode",
                       "value": {"workMode": work_mode, "modeValue": mode_value}}
 
-        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass)
 
         if success:
             return await self.update()
 
     async def get_work_mode(self):
-        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device, self.hass)
 
         for capability in device_state:
             if capability["instance"] == "workMode":
@@ -94,7 +95,7 @@ class H7102:
                         "percentage": (mode_value / 8) * 100}
 
     async def update(self):
-        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device, self.hass)
 
         power_state = None
         oscillation_state = None
