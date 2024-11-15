@@ -82,7 +82,7 @@ class MyCoordinator(DataUpdateCoordinator):
 
 class GoveeFan(FanEntity):
     mode_enum = {"Normal": 1, "Custom": 2, "Sleep": 5, "Nature": 6}
-    reversed_mode_enum = {1: "Normal", 2: "Custom", 3: "Normal", 5: "Sleep", 6: "Nature"}
+    reversed_mode_enum = {1: "Normal", 2: "Custom", 5: "Sleep", 6: "Nature"}
 
     _attr_current_direction = None
     _attr_is_on = False
