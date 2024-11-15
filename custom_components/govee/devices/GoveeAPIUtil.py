@@ -54,7 +54,7 @@ async def control_device(api_key: str, sku: str, device: str, capability: dict, 
 
             async with homeassistant.helpers.httpx_client.get_async_client(hass) as client:
 
-                response = await client.post(f"{BASE_URL}/router/api/v1/device/control", headers=headers, json=body)
+                response = await client.put(f"{BASE_URL}/router/api/v1/device/control", headers=headers, json=body)
 
             if response.status_code != 200:
                 log.warning(f"Failed to get device state: {response.status_code} - {response.text}")
