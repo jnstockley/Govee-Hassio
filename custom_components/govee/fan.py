@@ -36,9 +36,9 @@ async def async_setup_platform(hass: HomeAssistant, config: ConfigType, async_ad
 
     device = H7102(api_key=api_key, sku=sku, device=device_id, hass=hass)
 
-    #coordinator = MyCoordinator(hass, device)
+    coordinator = MyCoordinator(hass, device)
 
-    #await coordinator.async_refresh()
+    await coordinator.async_refresh()
 
     new_device = await device.update()
 
@@ -46,7 +46,7 @@ async def async_setup_platform(hass: HomeAssistant, config: ConfigType, async_ad
         [GoveeFan(device_id, sku, api_key, new_device)])
 
 
-'''class MyCoordinator(DataUpdateCoordinator):
+class MyCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass, device):
         """Initialize my coordinator."""
@@ -77,7 +77,7 @@ async def async_setup_platform(hass: HomeAssistant, config: ConfigType, async_ad
         except Exception as e:
             log.error(f"Failed to update device: {e}")
             raise e
-'''
+
 
 
 class GoveeFan(FanEntity):
