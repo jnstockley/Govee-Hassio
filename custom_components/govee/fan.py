@@ -24,14 +24,14 @@ log = logging.getLogger()
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_DEVICE_ID): cv.string,
     vol.Required(CONF_API_KEY): cv.string,
-    #vol.Required(CONF_NAME): cv.string,
+    vol.Required(CONF_NAME): cv.string,
 })
 
 
 async def async_setup_platform(hass: HomeAssistant, config: ConfigType, async_add_entities: AddEntitiesCallback,
                                discovery_info: DiscoveryInfoType | None = None) -> None:
     device_id = config[CONF_DEVICE_ID]
-    sku = "H7102"
+    sku = config[CONF_NAME]
     api_key = config[CONF_API_KEY]
 
     device = H7102(api_key=api_key, sku=sku, device=device_id, hass=hass)
