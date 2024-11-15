@@ -81,6 +81,7 @@ class MyCoordinator(DataUpdateCoordinator):
 
 
 class GoveeFan(FanEntity):
+    mode_enum = {"Normal": 1, "Custom": 2, "Sleep": 5, "Nature": 6}
     reversed_mode_enum = {1: "Normal", 2: "Custom", 3: "Normal", 5: "Sleep", 6: "Nature"}
 
     _attr_current_direction = None
@@ -138,7 +139,9 @@ class GoveeFan(FanEntity):
         else:
             await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off_oscillation()
 
-        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(1, percentage)
+        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_percentage(int(percentage / 100) * 8)
+
+        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(1)
 
         device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
         self._attr_is_on = device.power_state
@@ -155,12 +158,17 @@ class GoveeFan(FanEntity):
 
 
     async def async_set_percentage(self, percentage: int) -> None:
-        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-        log.info(f"Device: {device}")
+        #device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
+        #log.info(f"Device: {device}")
 
-        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(device.work_mode, int(percentage / 100) * 8)
+        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_percentage(int(percentage / 100) * 8)
         device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
         self._attr_percentage = device.percentage
+
+    async def async_set_preset_mode(self, preset_mode: str) -> None:
+        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(self.mode_enum[preset_mode])
+        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
+        self._attr_preset_mode = self.reversed_mode_enum[device.work_mode]
 
     async def async_update(self) -> None:
         log.info(f"Updating fan for device {self.device_id} - {self.sku}")
