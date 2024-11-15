@@ -69,10 +69,17 @@ class H7102:
             if capability["instance"] == "oscillationToggle":
                 return int(capability["state"]["value"]) == 1
 
+    async def set_percentage(self, percentage: int):
+        capability = {"name": "gear", "value": percentage}
+
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass, appliance_api=True)
+
+        if success:
+            return await self.update()
+
     # TODO Be able to set with percentage, and enum
-    async def set_work_mode(self, work_mode: int, mode_value: int):
-        capability = {"type": "devices.capabilities.work_mode", "instance": "workMode",
-                      "value": {"workMode": work_mode, "modeValue": mode_value}}
+    async def set_work_mode(self, work_mode: int):
+        capability = {"name": "mode", "value": work_mode}
 
         success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass, appliance_api=True)
 
