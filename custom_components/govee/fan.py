@@ -90,7 +90,7 @@ class GoveeFan(FanEntity):
     _attr_percentage = 0
     _attr_preset_mode = None
     _attr_preset_modes = list(reversed_mode_enum.values())
-    _attr_speed_count = len(reversed_mode_enum.keys())
+    _attr_speed_count = 8
     _attr_unique_id = f"{CONF_DEVICE_ID}-{CONF_NAME}"
     _attr_name = "Govee Smart Tower Fan"
 
@@ -139,9 +139,9 @@ class GoveeFan(FanEntity):
         else:
             await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off_oscillation()
 
-        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_percentage(int(percentage / 100) * 8)
+        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_percentage(int((percentage / 100) * 8))
 
-        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(1)
+        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(self.mode_enum[device.work_mode])
 
         device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
         self._attr_is_on = device.power_state
@@ -158,10 +158,7 @@ class GoveeFan(FanEntity):
 
 
     async def async_set_percentage(self, percentage: int) -> None:
-        #device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-        #log.info(f"Device: {device}")
-
-        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_percentage(int(percentage / 100) * 8)
+        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_percentage(int((percentage / 100) * 8))
         device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
         self._attr_percentage = device.percentage
 
