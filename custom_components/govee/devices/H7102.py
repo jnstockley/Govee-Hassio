@@ -74,7 +74,7 @@ class H7102:
         capability = {"type": "devices.capabilities.work_mode", "instance": "workMode",
                       "value": {"workMode": work_mode, "modeValue": mode_value}}
 
-        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass)
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass, appliance_api=True)
 
         if success:
             return await self.update()
