@@ -103,7 +103,7 @@ class GoveeFan(FanEntity):
         self._attr_is_on = device.power_state
         self._attr_oscillating = device.oscillation_state
         self._attr_percentage = device.percentage
-        self._attr_preset_mode = self.reversed_mode_enum[device.work_mode]
+        self._attr_preset_mode = "Temp"
         self._attr_name = "Tower Fan"
 
 
