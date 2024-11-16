@@ -1,6 +1,10 @@
 {
     "name": "Govee",
+    "content_in_root": false,
+    "zip_release": true,
+    "filename": "govee.zip",
     "hide_default_branch": true,
+    "country": ["US"],
     "homeassistant": "2024.11.0",
-    "render_readme": true
+    "hacs": "2.0.0"
 }
