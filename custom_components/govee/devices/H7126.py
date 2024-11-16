@@ -18,46 +18,46 @@ class H7126_Device:
 class H7126:
     work_mode_dict = {1: "Sleeping", 2: "Low", 3: "High", 0: "Custom"}
 
-    def __init__(self, api_key: str, sku: str, device: str):
+    def __init__(self, api_key: str, sku: str, device: str, hass):
         self.api_key = api_key
         self.sku = sku
         self.device = device
+        self.hass = hass
 
-    def turn_on(self):
+    async def turn_on(self):
         capability = {"type": "devices.capabilities.on_off", "instance": "powerSwitch", "value": 1}
 
-        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass)
 
         if success:
             return self.update()
 
-    def turn_off(self):
+    async def turn_off(self):
         capability = {"type": "devices.capabilities.on_off", "instance": "powerSwitch", "value": 0}
 
-        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass)
 
         if success:
             return self.update()
 
-    def get_power_state(self):
-        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+    async def get_power_state(self):
+        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device, self.hass)
 
         for capability in device_state:
             if capability["instance"] == "powerSwitch":
                 return int(capability["state"]["value"]) == 1
 
     # TODO Be able to set with percentage, and enum
-    def set_work_mode(self, work_mode: int, mode_value: int):
-        capability = {"type": "devices.capabilities.work_mode", "instance": "workMode",
-                      "value": {"workMode": work_mode, "modeValue": mode_value}}
+    async def set_work_mode(self, work_mode: int):
+        capability = {"name": "mode", "value": work_mode}
 
-        success = GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability)
+        success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass, appliance_api=True)
 
         if success:
             return self.update()
 
-    def get_work_mode(self):
-        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+    async def get_work_mode(self):
+        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device, self.hass)
 
         for capability in device_state:
             if capability["instance"] == "workMode":
@@ -71,22 +71,30 @@ class H7126:
                 return {"work_mode": work_mode, "mode_enum": mode_enum, "mode_value": mode_value,
                         "percentage": (mode_value / 4) * 100}
 
-    def get_filter_life_time(self):
-        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+    async def get_filter_life_time(self):
+        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device, self.hass)
 
         for capability in device_state:
             if capability["instance"] == "filterLifeTime":
                 return float(capability["state"]["value"])
 
-    def get_air_quality(self):
-        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+    async def get_air_quality(self):
+        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device, self.hass)
 
         for capability in device_state:
             if capability["instance"] == "airQuality":
                 return int(capability["state"]["value"])
 
-    def update(self):
-        device_state = GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device)
+    async def update(self):
+        device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device, self.hass)
+
+        power_state = None
+        work_mode = None
+        mode_value = None
+        percentage = None
+        filter_life_time = None
+        air_quality = None
+        mode_enum = None
 
         for capability in device_state:
             if capability["instance"] == "workMode":
