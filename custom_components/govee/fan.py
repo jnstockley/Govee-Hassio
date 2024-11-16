@@ -1,7 +1,7 @@
 """Platform for fan integration"""
 import logging
 from datetime import timedelta
-from typing import Any
+from typing import Any, Optional
 
 import async_timeout
 import homeassistant.helpers.config_validation as cv
@@ -18,6 +18,7 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from custom_components.govee.devices.H7102 import H7102, H7102_Device
+from custom_components.govee.devices.H7126 import H7126, H7126_Device
 
 log = logging.getLogger()
 
@@ -82,18 +83,18 @@ class MyCoordinator(DataUpdateCoordinator):
 
 
 class GoveeFan(FanEntity):
-    mode_enum = {"Normal": 1, "Custom": 2, "Sleep": 5, "Nature": 6}
-    reversed_mode_enum = {1: "Normal", 2: "Custom", 5: "Sleep", 6: "Nature"}
+    h7102_mode_enum = {"Normal": 1, "Custom": 2, "Sleep": 5, "Nature": 6}
+    h7102_reversed_mode_enum = {1: "Normal", 2: "Custom", 5: "Sleep", 6: "Nature"}
+
+    h7126_mode_enum = {"Sleeping": 1, "Low": 2, "High": 3, "Custom": 4}
+    h7126_reversed_mode_enum = {1: "Sleeping", 2: "Low", 3: "High", 0: "Custom"}
 
     _attr_current_direction = None
     _attr_is_on = False
     _attr_oscillating = False
     _attr_percentage = 0
     _attr_preset_mode = None
-    _attr_preset_modes = list(reversed_mode_enum.values())
     _attr_speed_count = 8
-    _attr_unique_id = CONF_DEVICE_ID
-    _attr_name = "Tower Fan"
 
     def __init__(self, device_id: str, sku: str, api_key: str, device: H7102_Device) -> None:
         log.info(f"Setting up fan: {device_id} - {sku} - {api_key}")
@@ -102,21 +103,34 @@ class GoveeFan(FanEntity):
         self.api_key = api_key
 
         self._attr_is_on = device.power_state
-        self._attr_oscillating = device.oscillation_state
-        self._attr_percentage = device.percentage
-        self._attr_preset_mode = "Temp"
-        self._attr_name = "Tower Fan"
+        self._attr_preset_mode = "Normal"
+        self._attr_unique_id = device_id
+        self._attr_name = self.device_id
+
+        if self.sku == "H7102":
+            self._attr_oscillating = device.oscillation_state
+            self._attr_percentage = device.percentage
+            self._attr_name = "Smart Tower Fan"
+            self._attr_preset_modes = list(self.h7102_mode_enum.keys())
+        elif self.sku == "H7126":
+            self._attr_name = "Smart Air Purifier"
+            self._attr_preset_modes = list(self.h7126_mode_enum.keys())
 
 
     @property
     def supported_features(self) -> FanEntityFeature:
         """Flag supported features."""
         features = FanEntityFeature(0)
-        features |= FanEntityFeature.SET_SPEED
-        features |= FanEntityFeature.OSCILLATE
-        features |= FanEntityFeature.TURN_ON
-        features |= FanEntityFeature.TURN_OFF
-        features |= FanEntityFeature.PRESET_MODE
+        if self.sku == "H7102":
+            features |= FanEntityFeature.SET_SPEED
+            features |= FanEntityFeature.OSCILLATE
+            features |= FanEntityFeature.TURN_ON
+            features |= FanEntityFeature.TURN_OFF
+            features |= FanEntityFeature.PRESET_MODE
+        elif self.sku == "H7126":
+            features |= FanEntityFeature.TURN_ON
+            features |= FanEntityFeature.TURN_OFF
+            features |= FanEntityFeature.PRESET_MODE
 
         return features
 
@@ -130,34 +144,50 @@ class GoveeFan(FanEntity):
         device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
         self._attr_oscillating = device.oscillation_state
 
-    async def async_turn_on(self, percentage: int | None = None, **kwargs: Any) -> None:
-        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-        log.info(f"Device: {device}")
+    async def async_turn_on(self, speed: Optional[str] = None, percentage: Optional[int] = None, preset_mode: Optional[str] = None, **kwargs: Any) -> None:
+        if self.sku == "H7102":
+            device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
+            log.info(f"Device: {device}")
 
-        await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_on()
+            await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_on()
 
-        if device.oscillation_state:
-            await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_on_oscillation()
-        else:
-            await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off_oscillation()
+            if device.oscillation_state:
+                await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_on_oscillation()
+            else:
+                await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off_oscillation()
 
-        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_percentage(int((percentage / 100) * 8))
+            await H7102(self.api_key, self.sku, self.device_id, self.hass).set_percentage(int((percentage / 100) * 8))
 
-        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(self.mode_enum[device.work_mode])
+            await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(self.h7102_mode_enum[device.work_mode])
 
-        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-        self._attr_is_on = device.power_state
-        self._attr_oscillating = device.oscillation_state
-        self._attr_percentage = device.percentage
-        self._attr_preset_mode = self.reversed_mode_enum[device.work_mode]
+            device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
+            self._attr_is_on = device.power_state
+            self._attr_oscillating = device.oscillation_state
+            self._attr_percentage = device.percentage
+            self._attr_preset_mode = self.h7102_reversed_mode_enum[device.work_mode]
+        elif self.sku == "H7126":
+            device: H7126_Device = await H7126(self.api_key, self.sku, self.device_id, self.hass).update()
+            log.info(f"Device: {device}")
 
+            await H7126(self.api_key, self.sku, self.device_id, self.hass).turn_on()
+
+            await H7126(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(self.h7126_mode_enum[device.work_mode])
+
+            device: H7126_Device = await H7126(self.api_key, self.sku, self.device_id, self.hass).update()
+            self._attr_is_on = device.power_state
+            self._attr_preset_mode = self.h7126_reversed_mode_enum[device.work_mode]
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off()
-        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-        log.info(f"Turned off: {device}")
-        self._attr_is_on = device.power_state
-
+        if self.sku == "H7102":
+            await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off()
+            device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
+            log.info(f"Turned off: {device}")
+            self._attr_is_on = device.power_state
+        elif self.sku == "H7126":
+            await H7126(self.api_key, self.sku, self.device_id, self.hass).turn_off()
+            device: H7126_Device = await H7126(self.api_key, self.sku, self.device_id, self.hass).update()
+            log.info(f"Turned off: {device}")
+            self._attr_is_on = device.power_state
 
     async def async_set_percentage(self, percentage: int) -> None:
         await H7102(self.api_key, self.sku, self.device_id, self.hass).set_percentage(int((percentage / 100) * 8))
@@ -165,15 +195,26 @@ class GoveeFan(FanEntity):
         self._attr_percentage = device.percentage
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
-        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(self.mode_enum[preset_mode])
-        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-        self._attr_preset_mode = self.reversed_mode_enum[device.work_mode]
+        if self.sku == "H7102":
+            await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(self.h7102_mode_enum[preset_mode])
+            device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
+            self._attr_preset_mode = self.h7102_reversed_mode_enum[device.work_mode]
+        elif self.sku == "H7126":
+            await H7126(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(self.h7126_mode_enum[preset_mode])
+            device: H7126_Device = await H7126(self.api_key, self.sku, self.device_id, self.hass).update()
+            self._attr_preset_mode = self.h7126_reversed_mode_enum[device.work_mode]
 
     async def async_update(self) -> None:
         log.info(f"Updating fan for device {self.device_id} - {self.sku}")
-        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-        log.info(f"Device: {device}")
-        self._attr_is_on = device.power_state
-        self._attr_oscillating = device.oscillation_state
-        self._attr_percentage = device.percentage
-        self._attr_preset_mode = self.reversed_mode_enum[device.work_mode]
+        if self.sku == "H7102":
+            device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
+            log.info(f"Device: {device}")
+            self._attr_is_on = device.power_state
+            self._attr_oscillating = device.oscillation_state
+            self._attr_percentage = device.percentage
+            self._attr_preset_mode = self.h7102_reversed_mode_enum[device.work_mode]
+        elif self.sku == "H7126":
+            device: H7126_Device = await H7126(self.api_key, self.sku, self.device_id, self.hass).update()
+            log.info(f"Device: {device}")
+            self._attr_is_on = device.power_state
+            self._attr_preset_mode = self.h7126_reversed_mode_enum[device.work_mode]
