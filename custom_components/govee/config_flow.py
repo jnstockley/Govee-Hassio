@@ -5,7 +5,6 @@ import logging
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.const import CONF_API_KEY
 from homeassistant.core import HomeAssistant
@@ -13,8 +12,8 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 
-
 from .const import DOMAIN
+
 #from .devices import Generic
 
 _LOGGER = logging.getLogger(__name__)
@@ -28,7 +27,8 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 
 
 class PlaceholderHub:
-    """Placeholder class to make tests pass.
+    """
+    Placeholder class to make tests pass.
 
     TODO Remove this placeholder class and replace with things from your PyPI package.
     """
@@ -46,7 +46,8 @@ class PlaceholderHub:
 
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
-    """Validate the user input allows us to connect.
+    """
+    Validate the user input allows us to connect.
 
     Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
     """
@@ -71,7 +72,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     device_registry = dr.async_get(hass)
 
     device_registry.async_get_or_create(
-        identifiers={(DOMAIN, hub.devices['H5179'])},
+        identifiers={(DOMAIN, hub.devices["H5179"])},
         name="Govee Wi-Fi Thermo-Hygrometer"
     )
 
@@ -101,7 +102,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
-                return self.async_create_entry(title='Added device(s)', data=user_input)
+                return self.async_create_entry(title="Added device(s)", data=user_input)
 
         return self.async_show_form(
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors

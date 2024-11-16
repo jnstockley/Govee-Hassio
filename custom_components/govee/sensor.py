@@ -2,18 +2,24 @@ import logging
 from datetime import timedelta
 
 import async_timeout
-from homeassistant.const import CONF_DEVICE_ID, CONF_API_KEY, CONF_NAME, UnitOfTemperature, PERCENTAGE
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import DiscoveryInfoType, ConfigType
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant.components.sensor import (
+    PLATFORM_SCHEMA,
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
-    PLATFORM_SCHEMA
 )
+from homeassistant.const import (
+    CONF_API_KEY,
+    CONF_DEVICE_ID,
+    CONF_NAME,
+    PERCENTAGE,
+    UnitOfTemperature,
+)
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from custom_components.govee.devices.H5179 import H5179, H5179_Device

@@ -3,9 +3,9 @@
   "name": "Govee",
   "codeowners": ["@jnstockley"],
   "documentation": "https://github.com/jnstockley/Govee-Hassio/blob/main/README.md",
-  "issue_tracker": "https://github.com/jnstockley/Govee-Hassio/issues/new",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/jnstockley/Govee-Hassio/issues/new",
   "requirements": ["httpx"],
   "version": "2.0.0"
 }
