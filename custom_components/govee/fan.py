@@ -92,8 +92,6 @@ class GoveeFan(FanEntity):
     _attr_preset_mode = None
     _attr_preset_modes = list(reversed_mode_enum.values())
     _attr_speed_count = 8
-    _attr_unique_id = CONF_DEVICE_ID
-    _attr_name = "Tower Fan"
 
     def __init__(self, device_id: str, sku: str, api_key: str, device: H7102_Device) -> None:
         log.info(f"Setting up fan: {device_id} - {sku} - {api_key}")
@@ -104,8 +102,14 @@ class GoveeFan(FanEntity):
         self._attr_is_on = device.power_state
         self._attr_oscillating = device.oscillation_state
         self._attr_percentage = device.percentage
-        self._attr_preset_mode = "Temp"
-        self._attr_name = "Tower Fan"
+        self._attr_preset_mode = "Normal"
+        self._attr_unique_id = device_id
+        if self.sku == "H7102":
+            self._attr_name = "Smart Tower Fan"
+        elif self.sku == "H7126":
+            self._attr_name = "Smart Air Purifier"
+        else:
+            self._attr_name = self.device_id
 
 
     @property
