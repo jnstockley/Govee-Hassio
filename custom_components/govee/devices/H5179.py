@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 from custom_components.govee.devices import GoveeAPIUtil
 
-
 log = logging.getLogger()
 
 
@@ -33,7 +32,7 @@ class H5179:
 
         for capability in device_state:
             if capability["instance"] == "sensorHumidity":
-                return int(capability["state"]["value"]['currentHumidity'])
+                return int(capability["state"]["value"]["currentHumidity"])
 
     async def update(self):
         device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device, self.hass)
@@ -47,6 +46,6 @@ class H5179:
             if capability["instance"] == "sensorTemperature":
                 temperature = float(capability["state"]["value"])
             elif capability["instance"] == "sensorHumidity":
-                humidity = int(capability["state"]["value"]['currentHumidity'])
+                humidity = int(capability["state"]["value"]["currentHumidity"])
 
         return H5179_Device(temperature=temperature, humidity=humidity)
