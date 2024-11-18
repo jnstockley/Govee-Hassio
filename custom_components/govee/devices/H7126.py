@@ -30,7 +30,7 @@ class H7126:
         success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass)
 
         if success:
-            return self.update()
+            return await self.update()
 
     async def turn_off(self):
         capability = {"type": "devices.capabilities.on_off", "instance": "powerSwitch", "value": 0}
@@ -38,7 +38,7 @@ class H7126:
         success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass)
 
         if success:
-            return self.update()
+            return await self.update()
 
     async def get_power_state(self):
         device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device, self.hass)
@@ -54,7 +54,7 @@ class H7126:
         success = await GoveeAPIUtil.control_device(self.api_key, self.sku, self.device, capability, self.hass, appliance_api=True)
 
         if success:
-            return self.update()
+            return await self.update()
 
     async def get_work_mode(self):
         device_state = await GoveeAPIUtil.get_device_state(self.api_key, self.sku, self.device, self.hass)
