@@ -166,16 +166,18 @@ class GoveeFan(FanEntity):
             self._attr_percentage = device.percentage
             self._attr_preset_mode = self.h7102_reversed_mode_enum[device.work_mode]
         elif self.sku == "H7126":
-            device: H7126 = await H7126(self.api_key, self.device_id, self.hass).get_device_state()
+            device: H7126 = H7126(self.api_key, self.device_id, self.hass)
+            await device.get_device_state()
+
             log.info(f"Device: {device}")
 
-            await H7126(self.api_key, self.device_id, self.hass).turn_on()
+            await device.turn_on()
 
-            await H7126(self.api_key, self.device_id, self.hass).set_preset_mode(self.h7126_mode_enum[device.preset_mode])
+            await device.set_preset_mode(self.h7126_mode_enum[device.preset_mode])
 
-            device: H7126 = await H7126(self.api_key, self.device_id, self.hass).get_device_state()
+            device: H7126 = await device.get_device_state()
             self._attr_is_on = device.is_on
-            self._attr_preset_mode = self.preset_mode
+            self._attr_preset_mode = device.preset_mode
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         if self.sku == "H7102":
@@ -184,8 +186,9 @@ class GoveeFan(FanEntity):
             log.info(f"Turned off: {device}")
             self._attr_is_on = device.power_state
         elif self.sku == "H7126":
-            await H7126(self.api_key, self.device_id, self.hass).turn_off()
-            device: H7126 = await H7126(self.api_key, self.device_id, self.hass).get_device_state()
+            device: H7126 = H7126(self.api_key, self.device_id, self.hass)
+            await device.turn_off()
+            device: H7126 = await device.get_device_state()
             log.info(f"Turned off: {device}")
             self._attr_is_on = device.is_on
 
@@ -200,8 +203,9 @@ class GoveeFan(FanEntity):
             device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
             self._attr_preset_mode = self.h7102_reversed_mode_enum[device.work_mode]
         elif self.sku == "H7126":
-            await H7126(self.api_key, self.device_id, self.hass).set_preset_mode(self.h7126_mode_enum[preset_mode])
-            device: H7126 = await H7126(self.api_key, self.device_id, self.hass).get_device_state()
+            device: H7126 = H7126(self.api_key, self.device_id, self.hass)
+            await device.set_preset_mode(self.h7126_mode_enum[preset_mode])
+            device: H7126 = await device.get_device_state()
             self._attr_preset_mode = device.preset_mode
 
     async def async_update(self) -> None:
@@ -214,7 +218,8 @@ class GoveeFan(FanEntity):
             self._attr_percentage = device.percentage
             self._attr_preset_mode = self.h7102_reversed_mode_enum[device.work_mode]
         elif self.sku == "H7126":
-            device: H7126 = await H7126(self.api_key, self.device_id, self.hass).get_device_state()
+            device: H7126 =  H7126(self.api_key, self.device_id, self.hass)
+            await device.get_device_state()
             log.info(f"Device: {device}")
             self._attr_is_on = device.is_on
             self._attr_preset_mode = device.preset_mode
