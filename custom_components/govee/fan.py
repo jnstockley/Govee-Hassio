@@ -18,7 +18,7 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from custom_components.govee.devices.H7102 import H7102, H7102_Device
-from custom_components.govee.devices.H7126 import H7126, H7126_Device
+from custom_components.govee.devices.H7126 import H7126
 
 log = logging.getLogger()
 
@@ -166,16 +166,18 @@ class GoveeFan(FanEntity):
             self._attr_percentage = device.percentage
             self._attr_preset_mode = self.h7102_reversed_mode_enum[device.work_mode]
         elif self.sku == "H7126":
-            device: H7126_Device = await H7126(self.api_key, self.sku, self.device_id, self.hass).update()
+            device: H7126 = H7126(self.api_key, self.device_id, self.hass)
+            await device.get_device_state()
+
             log.info(f"Device: {device}")
 
-            await H7126(self.api_key, self.sku, self.device_id, self.hass).turn_on()
+            await device.turn_on()
 
-            await H7126(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(self.h7126_mode_enum[device.work_mode])
+            await device.set_preset_mode(self.h7126_mode_enum[device.preset_mode])
 
-            device: H7126_Device = await H7126(self.api_key, self.sku, self.device_id, self.hass).update()
-            self._attr_is_on = device.power_state
-            self._attr_preset_mode = self.h7126_reversed_mode_enum[device.work_mode]
+            device: H7126 = await device.get_device_state()
+            self._attr_is_on = device.is_on
+            self._attr_preset_mode = device.preset_mode
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         if self.sku == "H7102":
@@ -184,10 +186,11 @@ class GoveeFan(FanEntity):
             log.info(f"Turned off: {device}")
             self._attr_is_on = device.power_state
         elif self.sku == "H7126":
-            await H7126(self.api_key, self.sku, self.device_id, self.hass).turn_off()
-            device: H7126_Device = await H7126(self.api_key, self.sku, self.device_id, self.hass).update()
+            device: H7126 = H7126(self.api_key, self.device_id, self.hass)
+            await device.turn_off()
+            device: H7126 = await device.get_device_state()
             log.info(f"Turned off: {device}")
-            self._attr_is_on = device.power_state
+            self._attr_is_on = device.is_on
 
     async def async_set_percentage(self, percentage: int) -> None:
         await H7102(self.api_key, self.sku, self.device_id, self.hass).set_percentage(int((percentage / 100) * 8))
@@ -200,9 +203,10 @@ class GoveeFan(FanEntity):
             device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
             self._attr_preset_mode = self.h7102_reversed_mode_enum[device.work_mode]
         elif self.sku == "H7126":
-            await H7126(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(self.h7126_mode_enum[preset_mode])
-            device: H7126_Device = await H7126(self.api_key, self.sku, self.device_id, self.hass).update()
-            self._attr_preset_mode = self.h7126_reversed_mode_enum[device.work_mode]
+            device: H7126 = H7126(self.api_key, self.device_id, self.hass)
+            await device.set_preset_mode(self.h7126_mode_enum[preset_mode])
+            device: H7126 = await device.get_device_state()
+            self._attr_preset_mode = device.preset_mode
 
     async def async_update(self) -> None:
         log.info(f"Updating fan for device {self.device_id} - {self.sku}")
@@ -214,7 +218,8 @@ class GoveeFan(FanEntity):
             self._attr_percentage = device.percentage
             self._attr_preset_mode = self.h7102_reversed_mode_enum[device.work_mode]
         elif self.sku == "H7126":
-            device: H7126_Device = await H7126(self.api_key, self.sku, self.device_id, self.hass).update()
+            device: H7126 =  H7126(self.api_key, self.device_id, self.hass)
+            await device.get_device_state()
             log.info(f"Device: {device}")
-            self._attr_is_on = device.power_state
-            self._attr_preset_mode = self.h7126_reversed_mode_enum[device.work_mode]
+            self._attr_is_on = device.is_on
+            self._attr_preset_mode = device.preset_mode

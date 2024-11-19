@@ -8,7 +8,7 @@ log = logging.getLogger()
 BASE_URL = "https://openapi.api.govee.com"
 
 
-async def get_device_state(api_key: str, sku: str, device: str, hass):
+async def get_device_state(api_key: str, sku: str, device: str, hass) -> dict:
     try:
         headers = {"Govee-API-Key": api_key, "Content-Type": "application/json"}
         body = {"requestId": "uuid", "payload": {"sku": sku, "device": device}}
