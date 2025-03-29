@@ -1,225 +1,222 @@
-"""Platform for fan integration"""
+"""Fan platform for Your Integration."""
 import logging
-from datetime import timedelta
-from typing import Any, Optional
 
-import async_timeout
-import homeassistant.helpers.config_validation as cv
-import voluptuous as vol
 from homeassistant.components.fan import (
-    PLATFORM_SCHEMA,
     FanEntity,
     FanEntityFeature,
 )
-from homeassistant.const import CONF_API_KEY, CONF_DEVICE_ID, CONF_NAME
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util.percentage import (
+    ordered_list_item_to_percentage,
+    percentage_to_ordered_list_item,
+)
 
-from custom_components.govee.devices.H7102 import H7102, H7102_Device
-from custom_components.govee.devices.H7126 import H7126
+from .const import DOMAIN, MAIN_FAN, SECONDARY_FAN
 
-log = logging.getLogger()
+_LOGGER = logging.getLogger(__name__)
 
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback
+):
+    """Set up fans based on a config entry."""
+    coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+    api = hass.data[DOMAIN][entry.entry_id]["api"]
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_DEVICE_ID): cv.string,
-    vol.Required(CONF_API_KEY): cv.string,
-    vol.Required(CONF_NAME): cv.string,
-})
+    entities = [
+        MainFan(coordinator, entry, api),
+        SecondaryFan(coordinator, entry, api),
+    ]
 
+    async_add_entities(entities)
 
-async def async_setup_platform(hass: HomeAssistant, config: ConfigType, async_add_entities: AddEntitiesCallback,
-                               discovery_info: DiscoveryInfoType | None = None) -> None:
-    device_id = config[CONF_DEVICE_ID]
-    sku = config[CONF_NAME]
-    api_key = config[CONF_API_KEY]
+class MainFan(CoordinatorEntity, FanEntity):
+    """Representation of the main fan with full features."""
 
-    device = H7102(api_key=api_key, sku=sku, device=device_id, hass=hass)
+    _attr_supported_features = (
+        FanEntityFeature.SET_SPEED |
+        FanEntityFeature.OSCILLATE |
+        FanEntityFeature.PRESET_MODE
+    )
+    _attr_preset_modes = ["auto", "normal", "sleep"]
+    _speed_count = 3
 
-    coordinator = MyCoordinator(hass, device)
-
-    await coordinator.async_refresh()
-
-    new_device = await device.update()
-
-    async_add_entities(
-        [GoveeFan(device_id, sku, api_key, new_device)])
-
-
-class MyCoordinator(DataUpdateCoordinator):
-
-    def __init__(self, hass, device):
-        """Initialize my coordinator."""
-        super().__init__(
-            hass,
-            log,
-            # Name of the data. For logging purposes.
-            name="Govee W-Fi Tower Fan",
-            # Polling interval. Will only be polled if there are subscribers.
-            update_interval=timedelta(minutes=5),
-            # Set always_update to `False` if the data returned from the
-            # api can be compared via `__eq__` to avoid duplicate updates
-            # being dispatched to listeners
-            always_update=True
-        )
-
-        self.device = device
-
-    async def _async_update_data(self):
-        try:
-            # Note: asyncio.TimeoutError and aiohttp.ClientError are already
-            # handled by the data update coordinator.
-            async with async_timeout.timeout(10):
-                # Grab active context variables to limit data required to be fetched from API
-                # Note: using context is not required if there is no need or ability to limit
-                # data retrieved from API.
-                return await self.device.update()
-        except Exception as e:
-            log.error(f"Failed to update device: {e}")
-            raise e
-
-
-
-class GoveeFan(FanEntity):
-    h7102_mode_enum = {"Normal": 1, "Custom": 2, "Sleep": 5, "Nature": 6}
-    h7102_reversed_mode_enum = {1: "Normal", 2: "Custom", 5: "Sleep", 6: "Nature"}
-
-    h7126_mode_enum = {"Sleeping": 1, "Low": 2, "High": 3, "Custom": 4}
-    h7126_reversed_mode_enum = {1: "Sleeping", 2: "Low", 3: "High", 0: "Custom"}
-
-    _attr_current_direction = None
-    _attr_is_on = False
-    _attr_oscillating = False
-    _attr_percentage = 0
-    _attr_preset_mode = None
-    _attr_speed_count = 8
-
-    def __init__(self, device_id: str, sku: str, api_key: str, device: H7102_Device) -> None:
-        log.info(f"Setting up fan: {device_id} - {sku} - {api_key}")
-        self.device_id = device_id
-        self.sku = sku
-        self.api_key = api_key
-
-        self._attr_is_on = device.power_state
-        self._attr_preset_mode = "Normal"
-        self._attr_unique_id = device_id
-        self._attr_name = self.device_id
-
-        if self.sku == "H7102":
-            self._attr_oscillating = device.oscillation_state
-            self._attr_percentage = device.percentage
-            self._attr_name = "Smart Tower Fan"
-            self._attr_preset_modes = list(self.h7102_mode_enum.keys())
-        elif self.sku == "H7126":
-            self._attr_name = "Smart Air Purifier"
-            self._attr_preset_modes = list(self.h7126_mode_enum.keys())
-
+    def __init__(self, coordinator, entry, api):
+        """Initialize the fan."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_{MAIN_FAN}"
+        self._attr_name = "Main Fan"
+        self._entry = entry
+        self._api = api
+        self._speed_list = ["low", "medium", "high"]
 
     @property
-    def supported_features(self) -> FanEntityFeature:
-        """Flag supported features."""
-        features = FanEntityFeature(0)
-        if self.sku == "H7102":
-            features |= FanEntityFeature.SET_SPEED
-            features |= FanEntityFeature.OSCILLATE
-            features |= FanEntityFeature.TURN_ON
-            features |= FanEntityFeature.TURN_OFF
-            features |= FanEntityFeature.PRESET_MODE
-        elif self.sku == "H7126":
-            features |= FanEntityFeature.TURN_ON
-            features |= FanEntityFeature.TURN_OFF
-            features |= FanEntityFeature.PRESET_MODE
+    def is_on(self):
+        """Return true if the fan is on."""
+        if self.coordinator.data and "main_fan" in self.coordinator.data:
+            return self.coordinator.data["main_fan"]["power"]
+        return False
 
-        return features
+    @property
+    def current_direction(self):
+        """Return the current direction of the fan."""
+        return None  # Not supported by this fan
 
-    async def async_oscillate(self, oscillating: bool) -> None:
-        if oscillating:
-            await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_on_oscillation()
-        else:
-            await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off_oscillation()
+    @property
+    def oscillating(self):
+        """Return whether or not the fan is oscillating."""
+        if self.coordinator.data and "main_fan" in self.coordinator.data:
+            return self.coordinator.data["main_fan"].get("oscillation", False)
+        return False
 
-        log.info(f"Oscillation: {oscillating}")
-        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-        self._attr_oscillating = device.oscillation_state
+    @property
+    def percentage(self):
+        """Return the current speed percentage."""
+        if not self.is_on:
+            return 0
 
-    async def async_turn_on(self, speed: Optional[str] = None, percentage: Optional[int] = None, preset_mode: Optional[str] = None, **kwargs: Any) -> None:
-        if self.sku == "H7102":
-            device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-            log.info(f"Device: {device}")
+        if self.coordinator.data and "main_fan" in self.coordinator.data:
+            current_speed = self.coordinator.data["main_fan"].get("speed", 1)
+            speed_index = min(current_speed - 1, len(self._speed_list) - 1)
+            return ordered_list_item_to_percentage(self._speed_list, self._speed_list[speed_index])
+        return None
 
-            await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_on()
+    @property
+    def preset_mode(self):
+        """Return the current preset mode."""
+        if self.coordinator.data and "main_fan" in self.coordinator.data:
+            return self.coordinator.data["main_fan"].get("mode", "normal")
+        return None
 
-            if device.oscillation_state:
-                await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_on_oscillation()
-            else:
-                await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off_oscillation()
+    @property
+    def device_info(self):
+        """Return device info."""
+        return {
+            "identifiers": {(DOMAIN, f"{self._entry.entry_id}_fan")},
+            "name": "Main Fan",
+            "manufacturer": "Your Company",
+            "model": "Main Fan Model",
+        }
 
-            await H7102(self.api_key, self.sku, self.device_id, self.hass).set_percentage(int((percentage / 100) * 8))
+    async def async_set_percentage(self, percentage):
+        """Set the speed percentage of the fan."""
+        if percentage == 0:
+            await self.async_turn_off()
+            return
 
-            await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(self.h7102_mode_enum[device.work_mode])
+        # Convert percentage to speed
+        speed_name = percentage_to_ordered_list_item(self._speed_list, percentage)
+        speed_index = self._speed_list.index(speed_name) + 1
 
-            device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-            self._attr_is_on = device.power_state
-            self._attr_oscillating = device.oscillation_state
-            self._attr_percentage = device.percentage
-            self._attr_preset_mode = self.h7102_reversed_mode_enum[device.work_mode]
-        elif self.sku == "H7126":
-            device: H7126 = H7126(self.api_key, self.device_id, self.hass)
-            await device.get_device_state()
+        await self._api.set_fan_state("main", speed=speed_index)
+        await self.coordinator.async_request_refresh()
 
-            log.info(f"Device: {device}")
+    async def async_set_preset_mode(self, preset_mode):
+        """Set the preset mode of the fan."""
+        if preset_mode in self.preset_modes:
+            await self._api.set_fan_state("main", mode=preset_mode)
+            await self.coordinator.async_request_refresh()
 
-            await device.turn_on()
+    async def async_turn_on(
+        self,
+        percentage=None,
+        preset_mode=None,
+        **kwargs,
+    ):
+        """Turn on the fan."""
+        data = {"power": True}
 
-            await device.set_preset_mode(self.h7126_mode_enum[device.preset_mode])
+        if preset_mode is not None:
+            data["mode"] = preset_mode
 
-            device: H7126 = await device.get_device_state()
-            self._attr_is_on = device.is_on
-            self._attr_preset_mode = device.preset_mode
+        if percentage is not None:
+            if percentage > 0:
+                speed_name = percentage_to_ordered_list_item(self._speed_list, percentage)
+                data["speed"] = self._speed_list.index(speed_name) + 1
 
-    async def async_turn_off(self, **kwargs: Any) -> None:
-        if self.sku == "H7102":
-            await H7102(self.api_key, self.sku, self.device_id, self.hass).turn_off()
-            device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-            log.info(f"Turned off: {device}")
-            self._attr_is_on = device.power_state
-        elif self.sku == "H7126":
-            device: H7126 = H7126(self.api_key, self.device_id, self.hass)
-            await device.turn_off()
-            device: H7126 = await device.get_device_state()
-            log.info(f"Turned off: {device}")
-            self._attr_is_on = device.is_on
+        await self._api.set_fan_state("main", **data)
+        await self.coordinator.async_request_refresh()
 
-    async def async_set_percentage(self, percentage: int) -> None:
-        await H7102(self.api_key, self.sku, self.device_id, self.hass).set_percentage(int((percentage / 100) * 8))
-        device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-        self._attr_percentage = device.percentage
+    async def async_turn_off(self, **kwargs):
+        """Turn off the fan."""
+        await self._api.set_fan_state("main", power=False)
+        await self.coordinator.async_request_refresh()
 
-    async def async_set_preset_mode(self, preset_mode: str) -> None:
-        if self.sku == "H7102":
-            await H7102(self.api_key, self.sku, self.device_id, self.hass).set_work_mode(self.h7102_mode_enum[preset_mode])
-            device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-            self._attr_preset_mode = self.h7102_reversed_mode_enum[device.work_mode]
-        elif self.sku == "H7126":
-            device: H7126 = H7126(self.api_key, self.device_id, self.hass)
-            await device.set_preset_mode(self.h7126_mode_enum[preset_mode])
-            device: H7126 = await device.get_device_state()
-            self._attr_preset_mode = device.preset_mode
+    async def async_oscillate(self, oscillating):
+        """Set oscillation."""
+        await self._api.set_fan_state("main", oscillation=oscillating)
+        await self.coordinator.async_request_refresh()
 
-    async def async_update(self) -> None:
-        log.info(f"Updating fan for device {self.device_id} - {self.sku}")
-        if self.sku == "H7102":
-            device: H7102_Device = await H7102(self.api_key, self.sku, self.device_id, self.hass).update()
-            log.info(f"Device: {device}")
-            self._attr_is_on = device.power_state
-            self._attr_oscillating = device.oscillation_state
-            self._attr_percentage = device.percentage
-            self._attr_preset_mode = self.h7102_reversed_mode_enum[device.work_mode]
-        elif self.sku == "H7126":
-            device: H7126 =  H7126(self.api_key, self.device_id, self.hass)
-            await device.get_device_state()
-            log.info(f"Device: {device}")
-            self._attr_is_on = device.is_on
-            self._attr_preset_mode = device.preset_mode
+class SecondaryFan(CoordinatorEntity, FanEntity):
+    """Representation of the secondary fan with limited features."""
+
+    _attr_supported_features = FanEntityFeature.PRESET_MODE
+    _attr_preset_modes = ["auto", "sleep"]
+
+    def __init__(self, coordinator, entry, api):
+        """Initialize the fan."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_{SECONDARY_FAN}"
+        self._attr_name = "Secondary Fan"
+        self._entry = entry
+        self._api = api
+
+    @property
+    def is_on(self):
+        """Return true if the fan is on."""
+        if self.coordinator.data and "secondary_fan" in self.coordinator.data:
+            return self.coordinator.data["secondary_fan"]["power"]
+        return False
+
+    @property
+    def percentage(self):
+        """Return the current speed percentage."""
+        # This fan doesn't support speed control
+        return None
+
+    @property
+    def preset_mode(self):
+        """Return the current preset mode."""
+        if self.coordinator.data and "secondary_fan" in self.coordinator.data:
+            return self.coordinator.data["secondary_fan"].get("mode", "auto")
+        return None
+
+    @property
+    def device_info(self):
+        """Return device info."""
+        return {
+            "identifiers": {(DOMAIN, f"{self._entry.entry_id}_secondary_fan")},
+            "name": "Secondary Fan",
+            "manufacturer": "Your Company",
+            "model": "Secondary Fan Model",
+        }
+
+    async def async_set_preset_mode(self, preset_mode):
+        """Set the preset mode of the fan."""
+        if preset_mode in self.preset_modes:
+            await self._api.set_fan_state("secondary", mode=preset_mode)
+            await self.coordinator.async_request_refresh()
+
+    async def async_turn_on(
+        self,
+        percentage=None,
+        preset_mode=None,
+        **kwargs,
+    ):
+        """Turn on the fan."""
+        data = {"power": True}
+
+        if preset_mode is not None:
+            data["mode"] = preset_mode
+
+        await self._api.set_fan_state("secondary", **data)
+        await self.coordinator.async_request_refresh()
+
+    async def async_turn_off(self, **kwargs):
+        """Turn off the fan."""
+        await self._api.set_fan_state("secondary", power=False)
+        await self.coordinator.async_request_refresh()
