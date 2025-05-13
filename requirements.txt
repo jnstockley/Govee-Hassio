@@ -1,2 +1,1 @@
-colorlog==6.9.0
-pip>=21.3.1
+govee-cloud==20250426221125.dev0

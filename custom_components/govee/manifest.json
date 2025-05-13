@@ -1,11 +1,9 @@
 {
   "domain": "govee",
-  "name": "Govee",
-  "codeowners": ["@jnstockley"],
-  "documentation": "https://github.com/jnstockley/Govee-Hassio/blob/main/README.md",
-  "integration_type": "hub",
+  "name": "Govee Cloud API",
+  "requirements": [
+    "govee-cloud==20250426221125.dev0"
+  ],
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/jnstockley/Govee-Hassio/issues/new",
-  "requirements": ["httpx"],
-  "version": "2.0.0"
+  "version": "0.1.0"
 }
