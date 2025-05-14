@@ -14,8 +14,9 @@ import homeassistant.helpers.config_validation as cv
 from devices.air_purifier.h7126 import H7126
 from devices.fan.h7102 import H7102
 from homeassistant.components.fan import FanEntity, FanEntityFeature, PLATFORM_SCHEMA
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_NAME, CONF_API_KEY, CONF_DEVICE_ID
-from homeassistant.core import HomeAssistant, DOMAIN
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
@@ -35,18 +36,17 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 async def async_setup_entry(
         hass: HomeAssistant,
-        config: ConfigType,
+        entry: ConfigEntry,
         async_add_entities: AddEntitiesCallback,
-        discovery_info: DiscoveryInfoType | None = None
 ) -> None:
     """Set up the Govee fan platform."""
     # Add devices
-    _LOGGER.info(pformat(config))
+    _LOGGER.info(f"Setting up fan entry: {entry.data}")
 
     fan = {
-        "device_id": config[CONF_DEVICE_ID],
-        "api_key": config[CONF_API_KEY],
-        "name": config[CONF_NAME],
+        "device_id": entry.data[CONF_DEVICE_ID],
+        "api_key": entry.data[CONF_API_KEY],
+        "name": entry.data[CONF_NAME],
     }
 
     api = GoveeAPI(fan["api_key"])
@@ -137,7 +137,7 @@ class GoveeFan(FanEntity):
         return DeviceInfo(
             identifiers=identifiers,
             name=self._fan.device_name,
-            manufacturer=DOMAIN,
+            manufacturer="Govee",
             model=self._fan.device_name,
             model_id=self._fan.sku
         )
