@@ -15,7 +15,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_KEY, CONF_DEVICE_ID, CONF_NAME
-from homeassistant.core import DOMAIN
+from homeassistant.core import DOMAIN, HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from util.govee_api import GoveeAPI
@@ -33,6 +33,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 
 
 async def async_setup_entry(
+    hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
