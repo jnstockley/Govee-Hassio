@@ -1,9 +1,4 @@
-"""
-List of Sensors
-1. Online (All)
-2. Filter Life (H7126)
-3. Air Quality (H7126)
-"""
+"""Govee Sensor Platform for Home Assistant."""
 import logging
 from pprint import pformat
 
@@ -19,7 +14,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_KEY, CONF_DEVICE_ID, CONF_NAME
-from homeassistant.core import DOMAIN, HomeAssistant
+from homeassistant.core import DOMAIN
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from util.govee_api import GoveeAPI
@@ -34,13 +29,18 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 async def async_setup_entry(
-        hass: HomeAssistant,
         entry: ConfigEntry,
         async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the Govee fan platform."""
+    """
+    Set up the Govee sensor platform from a config entry.
+
+    :param entry: The config entry for the Govee device.
+    :param async_add_entities: Callback to add entities.
+    :return: None
+    """
     # Add devices
-    _LOGGER.info(f"Setting up fan entry: {entry.data}")
+    _LOGGER.info("Setting up fan entry: %s", entry.data)
 
     sensor = {
         "device_id": entry.data[CONF_DEVICE_ID],
@@ -68,15 +68,21 @@ async def async_setup_entry(
             await device.update(api)
             async_add_entities([GoveeOnlineSensor(sensor, api, device)])
         case _:
-            _LOGGER.warning(f"Unknown device name: {sensor['name']}")
+            _LOGGER.warning("Unknown device name: %s", sensor["name"])
 
 
 
 class GoveeOnlineSensor(SensorEntity):
     """Representation of a Govee Online Sensor."""
 
-    def __init__(self, sensor: dict, api: GoveeAPI, device) -> None:
-        """Initialize an Govee Fan."""
+    def __init__(self, sensor: dict, api: GoveeAPI, device: H5179 | H7126 | H7102) -> None:
+        """
+        Initialize an Govee Online Sensor.
+
+        :param sensor: Dictionary containing sensor configuration
+        :param api: GoveeAPI instance
+        :param device: Device instance
+        """
         _LOGGER.info(pformat(sensor))
         self._attr_unique_id = f"{sensor["device_id"]}_online"
         self._api = api
@@ -87,19 +93,38 @@ class GoveeOnlineSensor(SensorEntity):
 
     @property
     def name(self) -> str:
-        """Return the display name of this sensor."""
+        """
+        Return the display name of this sensor.
+
+        :return: str
+        """
         return "Status"
 
     @property
-    def device_class(self):
+    def device_class(self) -> str:
+        """
+        Return the device class of this sensor.
+
+        :return: str
+        """
         return SensorDeviceClass.ENUM
 
     @property
-    def options(self):
+    def options(self) -> list[str]:
+        """
+        Return the list of options for the sensor.
+
+        :return: list[str]
+        """
         return ["Online", "Offline", "Unknown"]
 
     @property
-    def native_value(self):
+    def native_value(self) -> str:
+        """
+        Return the status of the sensor.
+
+        :return: str
+        """
         if self._online:
             return "Online"
         if self._sensor.online is False:
@@ -108,6 +133,11 @@ class GoveeOnlineSensor(SensorEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
+        """
+        Return device information for the sensor.
+
+        :return: DeviceInfo
+        """
         identifiers = {
             (DOMAIN, self._sensor.device_id),
         }
@@ -119,7 +149,12 @@ class GoveeOnlineSensor(SensorEntity):
             model_id=self._sensor.sku
         )
 
-    async def async_update(self):
+    async def async_update(self) -> None:
+        """
+        Update the sensor state.
+
+        :return: None
+        """
         await self._sensor.update(self._api)
         if hasattr(self._sensor, "online"):
             self._online = self._sensor.online
@@ -128,8 +163,14 @@ class GoveeOnlineSensor(SensorEntity):
 class GoveeFilterLifeSensor(SensorEntity):
     """Representation of a Govee Filter Life Sensor."""
 
-    def __init__(self, sensor: dict, api: GoveeAPI, device) -> None:
-        """Initialize an Govee Fan."""
+    def __init__(self, sensor: dict, api: GoveeAPI, device: H5179 | H7126 | H7102) -> None:
+        """
+        Initialize an Govee Filter Life Sensor.
+
+        :param sensor: Dictionary containing sensor configuration
+        :param api: GoveeAPI instance
+        :param device: Device instance
+        """
         _LOGGER.info(pformat(sensor))
         self._attr_unique_id = f"{sensor["device_id"]}_filter_life"
         self._api = api
@@ -140,19 +181,38 @@ class GoveeFilterLifeSensor(SensorEntity):
 
     @property
     def name(self) -> str:
-        """Return the display name of this sensor."""
+        """
+        Return the display name of this sensor.
+
+        :return: str
+        """
         return "Filter Life"
 
     @property
-    def device_class(self):
+    def device_class(self) -> str:
+        """
+        Return the device class of this sensor.
+
+        :return: str
+        """
         return SensorDeviceClass.POWER_FACTOR
 
     @property
-    def native_value(self):
+    def native_value(self) -> int:
+        """
+        Return the filter life value.
+
+        :return: int
+        """
         return self._filter_life
 
     @property
     def device_info(self) -> DeviceInfo:
+        """
+        Return device information for the sensor.
+
+        :return: DeviceInfo
+        """
         identifiers = {
             (DOMAIN, self._sensor.device_id),
         }
@@ -164,7 +224,12 @@ class GoveeFilterLifeSensor(SensorEntity):
             model_id=self._sensor.sku
         )
 
-    async def async_update(self):
+    async def async_update(self) -> None:
+        """
+        Update the sensor state.
+
+        :return: None
+        """
         await self._sensor.update(self._api)
         if hasattr(self._sensor, "filter_life"):
             self._filter_life = self._sensor.filter_life
@@ -173,8 +238,14 @@ class GoveeFilterLifeSensor(SensorEntity):
 class GoveeAirQualitySensor(SensorEntity):
     """Representation of a Govee Air Quality Sensor."""
 
-    def __init__(self, sensor: dict, api: GoveeAPI, device) -> None:
-        """Initialize an Govee Fan."""
+    def __init__(self, sensor: dict, api: GoveeAPI, device: H5179 | H7126 | H7102) -> None:
+        """
+        Initialize an Govee Fan.
+
+        :param sensor: Dictionary containing sensor configuration
+        :param api: GoveeAPI instance
+        :param device: Device instance
+        """
         _LOGGER.info(pformat(sensor))
         self._attr_unique_id = f"{sensor["device_id"]}_air_quality"
         self._api = api
@@ -185,19 +256,38 @@ class GoveeAirQualitySensor(SensorEntity):
 
     @property
     def name(self) -> str:
-        """Return the display name of this sensor."""
+        """
+        Return the display name of this sensor.
+
+        :return: str
+        """
         return "Air Quality"
 
     @property
-    def device_class(self):
+    def device_class(self) -> str:
+        """
+        Return the device class of this sensor.
+
+        :return: str
+        """
         return SensorDeviceClass.AQI
 
     @property
-    def native_value(self):
+    def native_value(self) -> int:
+        """
+        Return the air quality value.
+
+        :return: int
+        """
         return self._air_quality
 
     @property
     def device_info(self) -> DeviceInfo:
+        """
+        Return device information for the sensor.
+
+        :return: DeviceInfo
+        """
         identifiers = {
             (DOMAIN, self._sensor.device_id),
         }
@@ -209,7 +299,12 @@ class GoveeAirQualitySensor(SensorEntity):
             model_id=self._sensor.sku
         )
 
-    async def async_update(self):
+    async def async_update(self) -> None:
+        """
+        Update the sensor state.
+
+        :return: None
+        """
         await self._sensor.update(self._api)
         if hasattr(self._sensor, "air_quality"):
             self._air_quality = self._sensor.air_quality
