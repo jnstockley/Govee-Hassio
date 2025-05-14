@@ -13,10 +13,10 @@ from pprint import pformat
 import homeassistant.helpers.config_validation as cv
 from devices.air_purifier.h7126 import H7126
 from devices.fan.h7102 import H7102
-from homeassistant.components.fan import FanEntity, FanEntityFeature
-from homeassistant.components.light import PLATFORM_SCHEMA
+from homeassistant.components.fan import FanEntity, FanEntityFeature, PLATFORM_SCHEMA
 from homeassistant.const import CONF_NAME, CONF_API_KEY, CONF_DEVICE_ID
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, DOMAIN
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.util.percentage import ranged_value_to_percentage, percentage_to_ranged_value
@@ -33,7 +33,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
-async def async_setup_platform(
+async def async_setup_entry(
         hass: HomeAssistant,
         config: ConfigType,
         async_add_entities: AddEntitiesCallback,
@@ -128,6 +128,19 @@ class GoveeFan(FanEntity):
     def speed_count(self):
         """"""
         return int_states_in_range(self.speed_range)
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        identifiers = {
+            ('govee', self._fan.device_id),
+        }
+        return DeviceInfo(
+            identifiers=identifiers,
+            name=self._fan.device_name,
+            manufacturer=DOMAIN,
+            model=self._fan.device_name,
+            model_id=self._fan.sku
+        )
 
     @property
     def supported_features(self):
