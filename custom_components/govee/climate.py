@@ -26,6 +26,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from util.govee_api import GoveeAPI
@@ -45,12 +46,14 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 
 
 async def async_setup_entry(
+    hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """
     Set up the Govee sensor platform from a config entry.
 
+    :param hass: Home Assistant instance.
     :param entry: Config entry.
     :param async_add_entities: Callback to add entities.
     :return: None
