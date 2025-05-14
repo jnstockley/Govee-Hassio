@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from typing import Optional, Any
 
 import voluptuous as vol
@@ -18,6 +19,8 @@ from homeassistant.const import CONF_NAME, CONF_API_KEY, CONF_DEVICE_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.util.percentage import ranged_value_to_percentage, percentage_to_ranged_value
+from homeassistant.util.scaling import int_states_in_range
 from util.govee_api import GoveeAPI
 
 _LOGGER = logging.getLogger("govee")
@@ -30,10 +33,10 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
-def setup_platform(
+async def async_setup_platform(
         hass: HomeAssistant,
         config: ConfigType,
-        add_entities: AddEntitiesCallback,
+        async_add_entities: AddEntitiesCallback,
         discovery_info: DiscoveryInfoType | None = None
 ) -> None:
     """Set up the Govee fan platform."""
@@ -46,44 +49,51 @@ def setup_platform(
         "name": config[CONF_NAME],
     }
 
-    add_entities([GoveeFan(fan)])
+    api = GoveeAPI(fan["api_key"])
+
+    match fan["name"].lower():
+        case "h7126":
+            device = H7126(fan["device_id"])
+            await device.update(api)
+        case "h7102":
+            device = H7102(fan["device_id"])
+            await device.update(api)
+        case _:
+            device = None
+
+    async_add_entities([GoveeFan(fan, api, device)])
 
 class GoveeFan(FanEntity):
     """Representation of a Govee Fan."""
 
-    def __init__(self, fan) -> None:
+    def __init__(self, fan, api: GoveeAPI, device) -> None:
         """Initialize an Govee Fan."""
         _LOGGER.info(pformat(fan))
-        self._api: GoveeAPI = GoveeAPI(fan["api_key"])
-        match fan["name"].lower():
-            case "h7126":
-                self._fan = H7126(fan["device_id"])
-            case "h7102":
-                self._fan = H7102(fan["device_id"])
-            case _:
-                self._fan = None
-        self._name = self._fan.device_name
-        self._current_direction = None
-        self._is_on = None
-        self._oscillating = None
-        self._percentage = None
-        self._preset_mode = None
-        self._preset_modes = list(self._fan.work_mode_dict.values())
+        self._attr_unique_id = fan["device_id"]
+        self._api = api
+        self._fan = device
+
+        if hasattr(self._fan, "device_name"):
+            self._name = self._fan.device_name
+        if hasattr(self._fan, "power_switch"):
+            self._is_on = self._fan.power_switch
+        if hasattr(self._fan, "oscillation_toggle"):
+            self._oscillating = self._fan.oscillation_toggle
+        if hasattr(self._fan, "fan_speed"):
+            self._current_speed = self._fan.fan_speed
+        if hasattr(self._fan, "work_mode"):
+            self._preset_mode = self._fan.work_mode
+        if hasattr(self._fan, "work_mode_dict"):
+            self._preset_modes = list(self._fan.work_mode_dict.values())
         if hasattr(self._fan, "max_fan_speed"):
-            self._speed_count = self._fan.max_fan_speed
+            self.speed_range = (self._fan.min_fan_speed, self._fan.max_fan_speed)
         else:
-            self._speed_count = None
-        self._supported_features = None
+            self.speed_range = (0,0)
 
     @property
     def name(self) -> str:
         """Return the display name of this fan."""
         return self._name
-
-    @property
-    def current_direction(self):
-        """"""
-        return self._current_direction
 
     @property
     def is_on(self):
@@ -99,7 +109,7 @@ class GoveeFan(FanEntity):
     @property
     def percentage(self):
         """"""
-        return self._percentage
+        return ranged_value_to_percentage(self.speed_range, self._current_speed)
 
 
     @property
@@ -117,7 +127,7 @@ class GoveeFan(FanEntity):
     @property
     def speed_count(self):
         """"""
-        return self.speed_count
+        return int_states_in_range(self.speed_range)
 
     @property
     def supported_features(self):
@@ -143,18 +153,18 @@ class GoveeFan(FanEntity):
 
     async def async_set_percentage(self, percentage: int) -> None:
         """Set the speed percentage of the fan."""
+        value_in_range = math.ceil(percentage_to_ranged_value(self.speed_range, percentage))
+        await self._fan.set_fan_speed(self._api, value_in_range)
+        self._current_speed = self._fan.fan_speed
 
     async def async_turn_on(self, percentage: Optional[int] = None, preset_mode: Optional[str] = None, **kwargs: Any) -> None:
         """Turn on the fan."""
-        await self._fan.turn_off(self._api)
+        await self._fan.turn_on(self._api)
         if percentage:
             await self._fan.set_fan_speed(self._api, percentage)
         if preset_mode:
             await self._fan.set_work_mode(self._api, preset_mode)
-        self._is_on = self._fan.power_switch
-        if self._fan.sku.lower() == "h7102":
-            self._percentage = self._fan.fan_speed
-        self._preset_mode = self._fan.work_mode
+        await self.async_update()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the fan off."""
@@ -165,3 +175,12 @@ class GoveeFan(FanEntity):
         """Oscillate the fan."""
         await self._fan.toggle_oscillation(self._api, oscillating)
         self._oscillating = self._fan.oscillation_toggle
+
+    async def async_update(self):
+        await self._fan.update(self._api)
+        self._is_on = self._fan.power_switch
+        if hasattr(self._fan, "oscillation_toggle"):
+            self._oscillating = self._fan.oscillation_toggle
+        if hasattr(self._fan, "fan_speed"):
+            self._current_speed = self._fan.fan_speed
+        self._preset_mode = self._fan.work_mode
