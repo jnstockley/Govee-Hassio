@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from pprint import pformat
+from typing import TYPE_CHECKING
 
 # Import the device class from the component that you want to support
 import homeassistant.helpers.config_validation as cv
@@ -13,7 +14,6 @@ from homeassistant.components.climate import (
     ClimateEntity,
     ClimateEntityFeature,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_API_KEY,
     CONF_DEVICE_ID,
@@ -21,9 +21,12 @@ from homeassistant.const import (
     PRECISION_TENTHS,
     UnitOfTemperature,
 )
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
 from util.govee_api import GoveeAPI
 
 from custom_components.govee.const import DOMAIN
@@ -39,12 +42,17 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 
 async def async_setup_entry(
-        hass: HomeAssistant,
         entry: ConfigEntry,
         async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the Govee climate platform from a config entry."""
-    _LOGGER.info(f"Setting up climate entry: {entry.data}")
+    """
+    Set up the Govee sensor platform from a config entry.
+
+    :param entry: Config entry.
+    :param async_add_entities: Callback to add entities.
+    :return: None
+    """
+    _LOGGER.info("Setting up climate entry: %s", entry.data)
 
     thermometer = {
         "device_id": entry.data[CONF_DEVICE_ID],
@@ -66,8 +74,14 @@ async def async_setup_entry(
 class GoveeThermometer(ClimateEntity):
     """Representation of a Govee Fan."""
 
-    def __init__(self, thermometer: dict, api: GoveeAPI, device: H5179):
-        """Initialize the Govee Fan."""
+    def __init__(self, thermometer: dict, api: GoveeAPI, device: H5179) -> None:
+        """
+        Initialize the Govee thermometer.
+
+        :param thermometer: Dictionary containing device configuration
+        :param api: GoveeAPI instance
+        :param device: H5179 device instance
+        """
         _LOGGER.info(pformat(thermometer))
         self._attr_unique_id = thermometer["device_id"]
         self._api = api
@@ -82,33 +96,65 @@ class GoveeThermometer(ClimateEntity):
 
     @property
     def name(self) -> str:
-        """Return the display name of this fan."""
+        """
+        Return the name of the device.
+
+        :return: str
+        """
         return self._name
 
     @property
-    def current_humidity(self):
-        """Return the current humidity."""
+    def current_humidity(self) -> float:
+        """
+        Return the current humidity.
+
+        :return: float
+        """
         return self._humidity
 
     @property
-    def temperature_unit(self):
-        """Return the unit of measurement used by the device."""
+    def temperature_unit(self) -> str:
+        """
+        Return the unit of measurement used by the device.
+
+        :return: str
+        """
         return UnitOfTemperature.FAHRENHEIT
 
     @property
-    def precision(self):
+    def precision(self) -> float:
+        """
+        Return the precision of the temperature measurement.
+
+        :return: float
+        """
         return PRECISION_TENTHS
 
     @property
-    def hvac_mode(self):
+    def hvac_mode(self) -> None:
+        """
+        Return the current HVAC operation mode.
+
+        :return: None
+        """
         return None
 
     @property
-    def hvac_modes(self):
+    def hvac_modes(self) -> None:
+        """
+        Return the list of available HVAC operation modes.
+
+        :return:
+        """
         return None
 
     @property
     def device_info(self) -> DeviceInfo:
+        """
+        Return the device info.
+
+        :return: DeviceInfo
+        """
         identifiers = {
             (DOMAIN, self._thermometer.device_id),
         }
@@ -121,23 +167,42 @@ class GoveeThermometer(ClimateEntity):
         )
 
     @property
-    def supported_features(self):
-        """Return the supported features."""
+    def supported_features(self) -> ClimateEntityFeature:
+        """
+        Return the list of supported features.
+
+        :return: ClimateEntityFeature
+        """
         features = ClimateEntityFeature(0)
         features |= ClimateEntityFeature.TARGET_HUMIDITY
         return features
 
     @property
-    def current_temperature(self):
-        """Return the current temperature."""
+    def current_temperature(self) -> float:
+        """
+        Return the current temperature.
+
+        :return: float
+        """
         return self._temperature
 
-    async def async_set_humidity(self, humidity):
-        """Set new target humidity."""
+    async def async_set_humidity(self, humidity: float) -> None:
+        """
+        Set the target humidity.
+
+        :param humidity: The target humidity to set
+        :return: None
+        """
+        self._humidity = humidity
         await self._thermometer.update(self._api)
         await self.async_update()
 
-    async def async_update(self):
+    async def async_update(self) -> None:
+        """
+        Update the device state.
+
+        :return: None
+        """
         await self._thermometer.update(self._api)
         if hasattr(self._thermometer, "temperature"):
             self._temperature = self._thermometer.temperature
