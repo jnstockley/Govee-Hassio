@@ -2,21 +2,28 @@
 from __future__ import annotations
 
 import logging
-
-import voluptuous as vol
-
 from pprint import pformat
 
 # Import the device class from the component that you want to support
 import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 from devices.thermometer.h5179 import H5179
-from homeassistant.components.climate import ClimateEntity, PLATFORM_SCHEMA, ClimateEntityFeature
+from homeassistant.components.climate import (
+    PLATFORM_SCHEMA,
+    ClimateEntity,
+    ClimateEntityFeature,
+)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_NAME, CONF_API_KEY, CONF_DEVICE_ID, UnitOfTemperature, PRECISION_TENTHS
+from homeassistant.const import (
+    CONF_API_KEY,
+    CONF_DEVICE_ID,
+    CONF_NAME,
+    PRECISION_TENTHS,
+    UnitOfTemperature,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from util.govee_api import GoveeAPI
 
 from custom_components.govee.const import DOMAIN

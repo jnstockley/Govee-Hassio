@@ -1,20 +1,19 @@
 from typing import Any
 
-import voluptuous as vol
-
 import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 from devices.air_purifier.h7126 import H7126
 from devices.fan.h7102 import H7102
 from devices.thermometer.h5179 import H5179
-
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult
-from homeassistant.const import CONF_NAME, CONF_API_KEY, CONF_DEVICE_ID
+from homeassistant.const import CONF_API_KEY, CONF_DEVICE_ID, CONF_NAME
 from util.govee_api import GoveeAPI
 
 
 class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
     """Example config flow."""
+
     # The schema version of the entries that it creates
     # Home Assistant will call your migrate method if the version changes
     VERSION = 1
@@ -35,7 +34,7 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
             ),
             errors=errors or {},
         )
-    
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -68,7 +67,7 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
                 errors["base"] = "unknown_device"
                 return await self._show_setup_form(errors)
 
-        '''device = AdGuardHome(
+        """device = AdGuardHome(
             user_input[CONF_HOST],
             port=user_input[CONF_PORT],
             username=username,
@@ -76,7 +75,7 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
             tls=user_input[CONF_SSL],
             verify_ssl=user_input[CONF_VERIFY_SSL],
             #session=session,
-        )'''
+        )"""
 
         try:
             await device.update(api)

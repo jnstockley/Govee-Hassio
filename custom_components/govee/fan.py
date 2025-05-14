@@ -3,24 +3,24 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Optional, Any
-
-import voluptuous as vol
-
 from pprint import pformat
+from typing import Any
 
 # Import the device class from the component that you want to support
 import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 from devices.air_purifier.h7126 import H7126
 from devices.fan.h7102 import H7102
-from homeassistant.components.fan import FanEntity, FanEntityFeature, PLATFORM_SCHEMA
+from homeassistant.components.fan import PLATFORM_SCHEMA, FanEntity, FanEntityFeature
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_NAME, CONF_API_KEY, CONF_DEVICE_ID
-from homeassistant.core import HomeAssistant, DOMAIN
+from homeassistant.const import CONF_API_KEY, CONF_DEVICE_ID, CONF_NAME
+from homeassistant.core import DOMAIN, HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
-from homeassistant.util.percentage import ranged_value_to_percentage, percentage_to_ranged_value
+from homeassistant.util.percentage import (
+    percentage_to_ranged_value,
+    ranged_value_to_percentage,
+)
 from homeassistant.util.scaling import int_states_in_range
 from util.govee_api import GoveeAPI
 
@@ -170,7 +170,7 @@ class GoveeFan(FanEntity):
         await self._fan.set_fan_speed(self._api, value_in_range)
         self._current_speed = self._fan.fan_speed
 
-    async def async_turn_on(self, percentage: Optional[int] = None, preset_mode: Optional[str] = None, **kwargs: Any) -> None:
+    async def async_turn_on(self, percentage: int | None = None, preset_mode: str | None = None, **kwargs: Any) -> None:
         """Turn on the fan."""
         await self._fan.turn_on(self._api)
         if percentage:

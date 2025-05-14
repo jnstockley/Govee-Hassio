@@ -1,22 +1,25 @@
-'''
+"""
 List of Sensors
 1. Online (All)
 2. Filter Life (H7126)
 3. Air Quality (H7126)
-'''
+"""
 import logging
 from pprint import pformat
 
-import voluptuous as vol
-
 import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 from devices.air_purifier.h7126 import H7126
 from devices.fan.h7102 import H7102
 from devices.thermometer.h5179 import H5179
+from homeassistant.components.sensor import (
+    PLATFORM_SCHEMA,
+    SensorDeviceClass,
+    SensorEntity,
+)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_NAME, CONF_API_KEY, CONF_DEVICE_ID
-from homeassistant.components.sensor import SensorEntity, PLATFORM_SCHEMA, SensorDeviceClass, SensorStateClass
-from homeassistant.core import HomeAssistant, DOMAIN
+from homeassistant.const import CONF_API_KEY, CONF_DEVICE_ID, CONF_NAME
+from homeassistant.core import DOMAIN, HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from util.govee_api import GoveeAPI
@@ -99,10 +102,9 @@ class GoveeOnlineSensor(SensorEntity):
     def native_value(self):
         if self._online:
             return "Online"
-        elif self._sensor.online is False:
+        if self._sensor.online is False:
             return "Offline"
-        else:
-            return "Unknown"
+        return "Unknown"
 
     @property
     def device_info(self) -> DeviceInfo:
