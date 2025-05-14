@@ -64,8 +64,6 @@ async def async_setup_entry(
                     GoveeOnlineSensor(sensor, api, device),
                     GoveeFilterLifeSensor(sensor, api, device),
                     GoveeAirQualitySensor(sensor, api, device),
-                    GoveeHumiditySensor(sensor, api, device),
-                    GoveeTemperatureSensor(sensor, api, device),
                 ]
             )
         case "h7102":
@@ -75,7 +73,11 @@ async def async_setup_entry(
         case "h5179":
             device = H5179(sensor["device_id"])
             await device.update(api)
-            async_add_entities([GoveeOnlineSensor(sensor, api, device)])
+            async_add_entities([
+                GoveeOnlineSensor(sensor, api, device),
+                GoveeHumiditySensor(sensor, api, device),
+                GoveeTemperatureSensor(sensor, api, device),
+            ])
         case _:
             _LOGGER.warning("Unknown device name: %s", sensor["name"])
 
@@ -354,6 +356,15 @@ class GoveeHumiditySensor(SensorEntity):
         :return: str
         """
         return SensorDeviceClass.HUMIDITY
+
+    @property
+    def native_unit_of_measurement(self) -> str:
+        """
+        Return the unit of measurement for the sensor.
+
+        :return: str
+        """
+        return "%"
 
     @property
     def native_value(self) -> float:
