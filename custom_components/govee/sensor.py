@@ -431,7 +431,7 @@ class GoveeTemperatureSensor(SensorEntity):
         return SensorDeviceClass.TEMPERATURE
 
     @property
-    def native_unit_of_measurement(self):
+    def native_unit_of_measurement(self) -> str:
         """
         Return the unit of measurement for the sensor.
 
