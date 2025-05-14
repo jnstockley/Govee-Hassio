@@ -11,6 +11,7 @@ from pprint import pformat
 import homeassistant.helpers.config_validation as cv
 from devices.thermometer.h5179 import H5179
 from homeassistant.components.climate import ClimateEntity, PLATFORM_SCHEMA, ClimateEntityFeature
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_NAME, CONF_API_KEY, CONF_DEVICE_ID, UnitOfTemperature, PRECISION_TENTHS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -30,20 +31,18 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
-async def async_setup_platform(
+async def async_setup_entry(
         hass: HomeAssistant,
-        config: ConfigType,
+        entry: ConfigEntry,
         async_add_entities: AddEntitiesCallback,
-        discovery_info: DiscoveryInfoType | None = None
 ) -> None:
-    """Set up the Govee fan platform."""
-    # Add devices
-    _LOGGER.info(pformat(config))
+    """Set up the Govee climate platform from a config entry."""
+    _LOGGER.info(f"Setting up climate entry: {entry.data}")
 
     thermometer = {
-        "device_id": config[CONF_DEVICE_ID],
-        "api_key": config[CONF_API_KEY],
-        "name": config[CONF_NAME],
+        "device_id": entry.data[CONF_DEVICE_ID],
+        "api_key": entry.data[CONF_API_KEY],
+        "name": entry.data[CONF_NAME],
     }
 
     api = GoveeAPI(thermometer["api_key"])
@@ -109,7 +108,7 @@ class GoveeThermometer(ClimateEntity):
         return DeviceInfo(
             identifiers=identifiers,
             name=self._thermometer.device_name,
-            manufacturer=DOMAIN,
+            manufacturer="Govee",
             model=self._thermometer.device_name,
             model_id=self._thermometer.sku
         )
