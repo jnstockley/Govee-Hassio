@@ -1,4 +1,5 @@
 """Platform for fan integration."""
+
 from __future__ import annotations
 
 import logging
@@ -30,16 +31,18 @@ from util.govee_api import GoveeAPI
 _LOGGER = logging.getLogger("govee")
 
 # Validation of the user's configuration
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_DEVICE_ID): cv.string,
-    vol.Required(CONF_API_KEY): cv.string,
-    vol.Required(CONF_NAME): cv.string,
-})
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+    {
+        vol.Required(CONF_DEVICE_ID): cv.string,
+        vol.Required(CONF_API_KEY): cv.string,
+        vol.Required(CONF_NAME): cv.string,
+    }
+)
 
 
 async def async_setup_entry(
-        entry: ConfigEntry,
-        async_add_entities: AddEntitiesCallback,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """
     Set up the Govee sensor platform from a config entry.
@@ -70,6 +73,7 @@ async def async_setup_entry(
             device = None
 
     async_add_entities([GoveeFan(fan, api, device)])
+
 
 class GoveeFan(FanEntity):
     """Representation of a Govee Fan."""
@@ -102,7 +106,7 @@ class GoveeFan(FanEntity):
         if hasattr(self._fan, "max_fan_speed"):
             self.speed_range = (self._fan.min_fan_speed, self._fan.max_fan_speed)
         else:
-            self.speed_range = (0,0)
+            self.speed_range = (0, 0)
 
     @property
     def name(self) -> str:
@@ -131,7 +135,6 @@ class GoveeFan(FanEntity):
         """
         return self._oscillating
 
-
     @property
     def percentage(self) -> int:
         """
@@ -140,7 +143,6 @@ class GoveeFan(FanEntity):
         :return: int
         """
         return ranged_value_to_percentage(self.speed_range, self._current_speed)
-
 
     @property
     def preset_mode(self) -> str:
@@ -151,7 +153,6 @@ class GoveeFan(FanEntity):
         """
         return self._preset_mode
 
-
     @property
     def preset_modes(self) -> list[str]:
         """
@@ -160,7 +161,6 @@ class GoveeFan(FanEntity):
         :return: list[str]
         """
         return self._preset_modes
-
 
     @property
     def speed_count(self) -> int:
@@ -186,7 +186,7 @@ class GoveeFan(FanEntity):
             name=self._fan.device_name,
             manufacturer="Govee",
             model=self._fan.sku,
-            model_id=self._fan.sku
+            model_id=self._fan.sku,
         )
 
     @property

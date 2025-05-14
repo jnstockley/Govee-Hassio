@@ -1,4 +1,5 @@
 """Govee Sensor Platform for Home Assistant."""
+
 import logging
 from pprint import pformat
 
@@ -22,15 +23,18 @@ from util.govee_api import GoveeAPI
 _LOGGER = logging.getLogger("govee")
 
 # Validation of the user's configuration
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_DEVICE_ID): cv.string,
-    vol.Required(CONF_API_KEY): cv.string,
-    vol.Required(CONF_NAME): cv.string,
-})
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+    {
+        vol.Required(CONF_DEVICE_ID): cv.string,
+        vol.Required(CONF_API_KEY): cv.string,
+        vol.Required(CONF_NAME): cv.string,
+    }
+)
+
 
 async def async_setup_entry(
-        entry: ConfigEntry,
-        async_add_entities: AddEntitiesCallback,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """
     Set up the Govee sensor platform from a config entry.
@@ -54,11 +58,13 @@ async def async_setup_entry(
         case "h7126":
             device = H7126(sensor["device_id"])
             await device.update(api)
-            async_add_entities([
-                GoveeOnlineSensor(sensor, api, device),
-                GoveeFilterLifeSensor(sensor, api, device),
-                GoveeAirQualitySensor(sensor, api, device)
-            ])
+            async_add_entities(
+                [
+                    GoveeOnlineSensor(sensor, api, device),
+                    GoveeFilterLifeSensor(sensor, api, device),
+                    GoveeAirQualitySensor(sensor, api, device),
+                ]
+            )
         case "h7102":
             device = H7102(sensor["device_id"])
             await device.update(api)
@@ -69,7 +75,6 @@ async def async_setup_entry(
             async_add_entities([GoveeOnlineSensor(sensor, api, device)])
         case _:
             _LOGGER.warning("Unknown device name: %s", sensor["name"])
-
 
 
 class GoveeOnlineSensor(SensorEntity):
@@ -84,7 +89,7 @@ class GoveeOnlineSensor(SensorEntity):
         :param device: Device instance
         """
         _LOGGER.info(pformat(sensor))
-        self._attr_unique_id = f"{sensor["device_id"]}_online"
+        self._attr_unique_id = f"{sensor['device_id']}_online"
         self._api = api
         self._sensor = device
 
@@ -146,7 +151,7 @@ class GoveeOnlineSensor(SensorEntity):
             name=self._sensor.device_name,
             manufacturer="Govee",
             model=self._sensor.sku,
-            model_id=self._sensor.sku
+            model_id=self._sensor.sku,
         )
 
     async def async_update(self) -> None:
@@ -172,7 +177,7 @@ class GoveeFilterLifeSensor(SensorEntity):
         :param device: Device instance
         """
         _LOGGER.info(pformat(sensor))
-        self._attr_unique_id = f"{sensor["device_id"]}_filter_life"
+        self._attr_unique_id = f"{sensor['device_id']}_filter_life"
         self._api = api
         self._sensor = device
 
@@ -221,7 +226,7 @@ class GoveeFilterLifeSensor(SensorEntity):
             name=self._sensor.device_name,
             manufacturer="Govee",
             model=self._sensor.sku,
-            model_id=self._sensor.sku
+            model_id=self._sensor.sku,
         )
 
     async def async_update(self) -> None:
@@ -247,7 +252,7 @@ class GoveeAirQualitySensor(SensorEntity):
         :param device: Device instance
         """
         _LOGGER.info(pformat(sensor))
-        self._attr_unique_id = f"{sensor["device_id"]}_air_quality"
+        self._attr_unique_id = f"{sensor['device_id']}_air_quality"
         self._api = api
         self._sensor = device
 
@@ -296,7 +301,7 @@ class GoveeAirQualitySensor(SensorEntity):
             name=self._sensor.device_name,
             manufacturer="Govee",
             model=self._sensor.sku,
-            model_id=self._sensor.sku
+            model_id=self._sensor.sku,
         )
 
     async def async_update(self) -> None:

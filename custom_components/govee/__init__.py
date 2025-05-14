@@ -1,4 +1,5 @@
 """The Govee integration."""
+
 from __future__ import annotations
 
 import logging
@@ -17,6 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 # Add both fan and climate platforms
 PLATFORMS: list[Platform] = [Platform.FAN, Platform.CLIMATE, Platform.SENSOR]
 
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Govee from a config entry."""
     hass.data.setdefault(DOMAIN, {})
@@ -26,6 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
+
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""

@@ -1,4 +1,5 @@
 """Config flow for Govee integration."""
+
 from typing import Any
 
 import homeassistant.helpers.config_validation as cv
@@ -20,9 +21,7 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
     VERSION = 1
     MINOR_VERSION = 1
 
-    async def _show_setup_form(
-            self, errors: dict[str, str] | None = None
-    ) -> ConfigFlowResult:
+    async def _show_setup_form(self, errors: dict[str, str] | None = None) -> ConfigFlowResult:
         """Show the setup form to the user."""
         return self.async_show_form(
             step_id="user",
@@ -36,16 +35,17 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
             errors=errors or {},
         )
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Handle a flow initiated by the user."""
         if user_input is None:
             return await self._show_setup_form(user_input)
 
         self._async_abort_entries_match(
-            {CONF_DEVICE_ID: user_input[CONF_DEVICE_ID], CONF_API_KEY: user_input[CONF_API_KEY],
-             CONF_NAME: user_input[CONF_NAME]}
+            {
+                CONF_DEVICE_ID: user_input[CONF_DEVICE_ID],
+                CONF_API_KEY: user_input[CONF_API_KEY],
+                CONF_NAME: user_input[CONF_NAME],
+            }
         )
 
         errors = {}
@@ -77,7 +77,6 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
             #session=session,
         )"""
 
-
         await device.update(api)
 
         return self.async_create_entry(
@@ -85,6 +84,6 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
             data={
                 CONF_DEVICE_ID: user_input[CONF_DEVICE_ID],
                 CONF_API_KEY: user_input.get(CONF_API_KEY),
-                CONF_NAME: user_input[CONF_NAME]
+                CONF_NAME: user_input[CONF_NAME],
             },
         )

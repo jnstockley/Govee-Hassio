@@ -1,4 +1,5 @@
 """Platform for climate integration."""
+
 from __future__ import annotations
 
 import logging
@@ -34,16 +35,18 @@ from custom_components.govee.const import DOMAIN
 _LOGGER = logging.getLogger("govee")
 
 # Validation of the user's configuration
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_DEVICE_ID): cv.string,
-    vol.Required(CONF_API_KEY): cv.string,
-    vol.Required(CONF_NAME): cv.string,
-})
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+    {
+        vol.Required(CONF_DEVICE_ID): cv.string,
+        vol.Required(CONF_API_KEY): cv.string,
+        vol.Required(CONF_NAME): cv.string,
+    }
+)
 
 
 async def async_setup_entry(
-        entry: ConfigEntry,
-        async_add_entities: AddEntitiesCallback,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """
     Set up the Govee sensor platform from a config entry.
@@ -70,6 +73,7 @@ async def async_setup_entry(
             device = None
 
     async_add_entities([GoveeThermometer(thermometer, api, device)])
+
 
 class GoveeThermometer(ClimateEntity):
     """Representation of a Govee Fan."""
@@ -163,7 +167,7 @@ class GoveeThermometer(ClimateEntity):
             name=self._thermometer.device_name,
             manufacturer="Govee",
             model=self._thermometer.sku,
-            model_id=self._thermometer.sku
+            model_id=self._thermometer.sku,
         )
 
     @property
