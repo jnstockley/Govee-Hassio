@@ -1,3 +1,4 @@
+"""Config flow for Govee integration."""
 from typing import Any
 
 import homeassistant.helpers.config_validation as cv
@@ -43,12 +44,11 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
             return await self._show_setup_form(user_input)
 
         self._async_abort_entries_match(
-            {CONF_DEVICE_ID: user_input[CONF_DEVICE_ID], CONF_API_KEY: user_input[CONF_API_KEY], CONF_NAME: user_input[CONF_NAME]}
+            {CONF_DEVICE_ID: user_input[CONF_DEVICE_ID], CONF_API_KEY: user_input[CONF_API_KEY],
+             CONF_NAME: user_input[CONF_NAME]}
         )
 
         errors = {}
-
-        #session = async_get_clientsession(self.hass, user_input[CONF_VERIFY_SSL])
 
         device_id = user_input.get(CONF_DEVICE_ID)
         api_key = user_input.get(CONF_API_KEY)
@@ -77,11 +77,8 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
             #session=session,
         )"""
 
-        try:
-            await device.update(api)
-        except Exception:
-            errors["base"] = "cannot_connect"
-            return await self._show_setup_form(errors)
+
+        await device.update(api)
 
         return self.async_create_entry(
             title="Govee",
