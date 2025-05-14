@@ -16,7 +16,7 @@ from devices.fan.h7102 import H7102
 from homeassistant.components.fan import FanEntity, FanEntityFeature, PLATFORM_SCHEMA
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_NAME, CONF_API_KEY, CONF_DEVICE_ID
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, DOMAIN
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
@@ -132,13 +132,13 @@ class GoveeFan(FanEntity):
     @property
     def device_info(self) -> DeviceInfo:
         identifiers = {
-            ('govee', self._fan.device_id),
+            (DOMAIN, self._fan.device_id),
         }
         return DeviceInfo(
             identifiers=identifiers,
             name=self._fan.device_name,
             manufacturer="Govee",
-            model=self._fan.device_name,
+            model=self._fan.sku,
             model_id=self._fan.sku
         )
 

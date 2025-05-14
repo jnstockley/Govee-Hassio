@@ -109,7 +109,7 @@ class GoveeThermometer(ClimateEntity):
             identifiers=identifiers,
             name=self._thermometer.device_name,
             manufacturer="Govee",
-            model=self._thermometer.device_name,
+            model=self._thermometer.sku,
             model_id=self._thermometer.sku
         )
 
