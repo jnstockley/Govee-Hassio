@@ -10,10 +10,9 @@ from devices.thermometer.h5179 import H5179
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_API_KEY, CONF_DEVICE_ID, CONF_NAME
-from homeassistant.core import callback
 from util.govee_api import GoveeAPI
 
-supported_skus = ['H7126', 'H7102', 'H5179']
+supported_skus = ["H7126", "H7102", "H5179"]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -64,7 +63,7 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
                     return await self.async_step_select_device()
             except Exception as e:
                 errors["base"] = "cannot_connect"
-                _LOGGER.error("Error connecting to Govee API", exc_info=e)
+                _LOGGER.exception("Error connecting to Govee API", exc_info=e)
 
         return self.async_show_form(
             step_id="user",
@@ -174,5 +173,5 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
             )
         except Exception as e:
             errors["base"] = "cannot_connect"
-            _LOGGER.error("Error connecting to Govee API", exc_info=e)
+            _LOGGER.exception("Error connecting to Govee API", exc_info=e)
             return await self._show_setup_form(errors)
