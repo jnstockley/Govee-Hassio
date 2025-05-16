@@ -9,7 +9,7 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/jnstockley/Govee-Hassio/issues",
   "requirements": [
-    "govee-cloud==20250426221125.dev0"
+    "govee-cloud==20250516184204.dev0"
   ],
-  "version": "3.0.0-beta.7"
+  "version": "3.0.0-beta.8"
 }

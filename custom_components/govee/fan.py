@@ -93,6 +93,8 @@ class GoveeFan(FanEntity):
         self._api = api
         self._fan = device
 
+        if hasattr(self._fan, "online"):
+            self._online = self._fan.online
         if hasattr(self._fan, "device_name"):
             self._name = self._fan.device_name
         if hasattr(self._fan, "power_switch"):
@@ -118,6 +120,15 @@ class GoveeFan(FanEntity):
         :return: str
         """
         return self._name
+
+    @property
+    def available(self) -> bool:
+        """
+        Return True if entity is available.
+
+        :return: bool
+        """
+        return self._online
 
     @property
     def is_on(self) -> bool:
