@@ -14,8 +14,11 @@ from devices.air_purifier.h7126 import H7126
 from devices.fan.h7102 import H7102
 from homeassistant.components.fan import PLATFORM_SCHEMA, FanEntity, FanEntityFeature
 from homeassistant.const import CONF_API_KEY, CONF_DEVICE_ID, CONF_NAME
-from homeassistant.core import DOMAIN
+from homeassistant.core import DOMAIN, callback
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from custom_components.govee.coordinator import GoveeCoordinator
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -63,6 +66,7 @@ async def async_setup_entry(
     }
 
     api = GoveeAPI(fan["api_key"])
+    coordinator = GoveeCoordinator(hass, entry, api)
 
     match fan["name"].lower():
         case "h7126":
@@ -74,13 +78,17 @@ async def async_setup_entry(
         case _:
             device = None
 
-    async_add_entities([GoveeFan(fan, api, device)])
+    await coordinator.async_config_entry_first_refresh()
+
+    async_add_entities(
+        GoveeFan(coordinator, idx, fan, api, device) for idx, ent in enumerate(coordinator.data)
+    )
 
 
-class GoveeFan(FanEntity):
+class GoveeFan(CoordinatorEntity, FanEntity):
     """Representation of a Govee Fan."""
 
-    def __init__(self, fan: dict, api: GoveeAPI, device: H7126 | H7102) -> None:
+    def __init__(self, coordinator, idx, fan: dict, api: GoveeAPI, device: H7126 | H7102) -> None:
         """
         Initialize the fan entity.
 
@@ -88,10 +96,12 @@ class GoveeFan(FanEntity):
         :param api: Govee API instance
         :param device: Device instance (H7126 or H7102)
         """
+        super().__init__(self, coordinator, context=idx)
         _LOGGER.info(pformat(fan))
         self._attr_unique_id = fan["device_id"]
         self._api = api
         self._fan = device
+        self.idx = idx
 
         if hasattr(self._fan, "online"):
             self._online = self._fan.online
@@ -120,15 +130,6 @@ class GoveeFan(FanEntity):
         :return: str
         """
         return self._name
-
-    @property
-    def available(self) -> bool:
-        """
-        Return True if entity is available.
-
-        :return: bool
-        """
-        return self._online
 
     @property
     def is_on(self) -> bool:
@@ -279,16 +280,25 @@ class GoveeFan(FanEntity):
         await self._fan.toggle_oscillation(self._api, oscillating)
         self._oscillating = self._fan.oscillation_toggle
 
-    async def async_update(self) -> None:
-        """
-        Update the fan state.
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        temp = self.coordinator.data[self.idx]["state"]
+        _LOGGER.error("Fan state: %s", temp)
+        self._attr_is_on = temp
+        self.async_write_ha_state()
 
-        :return: None
-        """
-        await self._fan.update(self._api)
-        self._is_on = self._fan.power_switch
-        if hasattr(self._fan, "oscillation_toggle"):
-            self._oscillating = self._fan.oscillation_toggle
-        if hasattr(self._fan, "fan_speed"):
-            self._current_speed = self._fan.fan_speed
-        self._preset_mode = self._fan.work_mode
+
+    #async def async_update(self) -> None:
+    #    """
+    #    Update the fan state.
+    #
+    #    :return: None
+    #    """
+    #    await self._fan.update(self._api)
+    #    self._is_on = self._fan.power_switch
+    #    if hasattr(self._fan, "oscillation_toggle"):
+    #        self._oscillating = self._fan.oscillation_toggle
+    #    if hasattr(self._fan, "fan_speed"):
+    #        self._current_speed = self._fan.fan_speed
+    #    self._preset_mode = self._fan.work_mode

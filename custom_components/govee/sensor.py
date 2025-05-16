@@ -15,10 +15,13 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_KEY, CONF_DEVICE_ID, CONF_NAME, UnitOfTemperature
-from homeassistant.core import DOMAIN, HomeAssistant
+from homeassistant.core import DOMAIN, HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from util.govee_api import GoveeAPI
+
+from custom_components.govee.coordinator import GoveeCoordinator, GoveeThermometerCoordinator
 
 _LOGGER = logging.getLogger("govee")
 
@@ -57,37 +60,40 @@ async def async_setup_entry(
 
     match sensor["name"].lower():
         case "h7126":
+            coordinator = GoveeCoordinator(hass, entry, api)
             device = H7126(sensor["device_id"])
             await device.update(api)
+            await coordinator.async_config_entry_first_refresh()
             async_add_entities(
-                [
-                    GoveeOnlineSensor(sensor, api, device),
-                    GoveeFilterLifeSensor(sensor, api, device),
-                    GoveeAirQualitySensor(sensor, api, device),
-                ]
+                [GoveeOnlineSensor(coordinator, idx, sensor, api, device) for idx, ent in enumerate(coordinator.data)] +
+                [GoveeFilterLifeSensor(coordinator, idx, sensor, api, device) for idx, ent in enumerate(coordinator.data)] +
+                [GoveeAirQualitySensor(coordinator, idx, sensor, api, device) for idx, ent in enumerate(coordinator.data)]
             )
         case "h7102":
+            coordinator = GoveeCoordinator(hass, entry, api)
             device = H7102(sensor["device_id"])
             await device.update(api)
-            async_add_entities([GoveeOnlineSensor(sensor, api, device)])
+            await coordinator.async_config_entry_first_refresh()
+            async_add_entities(
+                GoveeOnlineSensor(coordinator, idx, sensor, api, device) for idx, ent in enumerate(coordinator.data)
+            )
         case "h5179":
+            coordinator = GoveeThermometerCoordinator(hass, entry, api)
             device = H5179(sensor["device_id"])
             await device.update(api)
             async_add_entities(
-                [
-                    GoveeOnlineSensor(sensor, api, device),
-                    GoveeHumiditySensor(sensor, api, device),
-                    GoveeTemperatureSensor(sensor, api, device),
-                ]
+                [GoveeOnlineSensor(coordinator, idx, sensor, api, device) for idx, ent in enumerate(coordinator.data)] +
+                [GoveeHumiditySensor(coordinator, idx, sensor, api, device) for idx, ent in enumerate(coordinator.data)] +
+                [GoveeTemperatureSensor(coordinator, idx, sensor, api, device) for idx, ent in enumerate(coordinator.data)]
             )
         case _:
             _LOGGER.warning("Unknown device name: %s", sensor["name"])
 
 
-class GoveeOnlineSensor(SensorEntity):
+class GoveeOnlineSensor(CoordinatorEntity, SensorEntity):
     """Representation of a Govee Online Sensor."""
 
-    def __init__(self, sensor: dict, api: GoveeAPI, device: H5179 | H7126 | H7102) -> None:
+    def __init__(self, coordinator, idx, sensor: dict, api: GoveeAPI, device: H5179 | H7126 | H7102) -> None:
         """
         Initialize an Govee Online Sensor.
 
@@ -95,22 +101,15 @@ class GoveeOnlineSensor(SensorEntity):
         :param api: GoveeAPI instance
         :param device: Device instance
         """
+        super().__init__(coordinator, context=idx)
         _LOGGER.info(pformat(sensor))
         self._attr_unique_id = f"{sensor['device_id']}_online"
         self._api = api
         self._sensor = device
+        self.idx = idx
 
         if hasattr(self._sensor, "online"):
             self._online = self._sensor.online
-
-    @property
-    def available(self) -> bool:
-        """
-        Return True if entity is available.
-
-        :return: bool
-        """
-        return self._online
 
     @property
     def name(self) -> str:
@@ -170,21 +169,19 @@ class GoveeOnlineSensor(SensorEntity):
             model_id=self._sensor.sku,
         )
 
-    async def async_update(self) -> None:
-        """
-        Update the sensor state.
-
-        :return: None
-        """
-        await self._sensor.update(self._api)
-        if hasattr(self._sensor, "online"):
-            self._online = self._sensor.online
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        temp = self.coordinator.data[self.idx]["state"]
+        _LOGGER.error("Online sensor state: %s", temp)
+        self._attr_is_on = temp
+        self.async_write_ha_state()
 
 
-class GoveeFilterLifeSensor(SensorEntity):
+class GoveeFilterLifeSensor(CoordinatorEntity, SensorEntity):
     """Representation of a Govee Filter Life Sensor."""
 
-    def __init__(self, sensor: dict, api: GoveeAPI, device: H7126) -> None:
+    def __init__(self, coordinator, idx, sensor: dict, api: GoveeAPI, device: H7126) -> None:
         """
         Initialize an Govee Filter Life Sensor.
 
@@ -192,24 +189,17 @@ class GoveeFilterLifeSensor(SensorEntity):
         :param api: GoveeAPI instance
         :param device: Device instance
         """
+        super().__init__(coordinator, context=idx)
         _LOGGER.info(pformat(sensor))
         self._attr_unique_id = f"{sensor['device_id']}_filter_life"
         self._api = api
         self._sensor = device
+        self.idx = idx
 
         if hasattr(self._sensor, "filter_life"):
             self._filter_life = self._sensor.filter_life
         if hasattr(self._sensor, "online"):
             self._online = self._sensor.online
-
-    @property
-    def available(self) -> bool:
-        """
-        Return True if entity is available.
-
-        :return: bool
-        """
-        return self._online
 
     @property
     def name(self) -> str:
@@ -256,21 +246,19 @@ class GoveeFilterLifeSensor(SensorEntity):
             model_id=self._sensor.sku,
         )
 
-    async def async_update(self) -> None:
-        """
-        Update the sensor state.
-
-        :return: None
-        """
-        await self._sensor.update(self._api)
-        if hasattr(self._sensor, "filter_life"):
-            self._filter_life = self._sensor.filter_life
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        temp = self.coordinator.data[self.idx]["state"]
+        _LOGGER.error("Filter life sensor state: %s", temp)
+        self._attr_is_on = temp
+        self.async_write_ha_state()
 
 
-class GoveeAirQualitySensor(SensorEntity):
+class GoveeAirQualitySensor(CoordinatorEntity, SensorEntity):
     """Representation of a Govee Air Quality Sensor."""
 
-    def __init__(self, sensor: dict, api: GoveeAPI, device: H7126) -> None:
+    def __init__(self, coordinator, idx, sensor: dict, api: GoveeAPI, device: H7126) -> None:
         """
         Initialize an Govee Fan.
 
@@ -278,24 +266,17 @@ class GoveeAirQualitySensor(SensorEntity):
         :param api: GoveeAPI instance
         :param device: Device instance
         """
+        super().__init__(coordinator, context=idx)
         _LOGGER.info(pformat(sensor))
         self._attr_unique_id = f"{sensor['device_id']}_air_quality"
         self._api = api
         self._sensor = device
+        self.idx = idx
 
         if hasattr(self._sensor, "air_quality"):
             self._air_quality = self._sensor.air_quality
         if hasattr(self._sensor, "online"):
             self._online = self._sensor.online
-
-    @property
-    def available(self) -> bool:
-        """
-        Return True if entity is available.
-
-        :return: bool
-        """
-        return self._online
 
     @property
     def name(self) -> str:
@@ -353,10 +334,10 @@ class GoveeAirQualitySensor(SensorEntity):
             self._air_quality = self._sensor.air_quality
 
 
-class GoveeHumiditySensor(SensorEntity):
+class GoveeHumiditySensor(CoordinatorEntity, SensorEntity):
     """Representation of a Govee Humidity Sensor."""
 
-    def __init__(self, sensor: dict, api: GoveeAPI, device: H5179) -> None:
+    def __init__(self, coordinator, idx, sensor: dict, api: GoveeAPI, device: H5179) -> None:
         """
         Initialize an Govee Humidity Sensor.
 
@@ -364,24 +345,17 @@ class GoveeHumiditySensor(SensorEntity):
         :param api: GoveeAPI instance
         :param device: Device instance
         """
+        super().__init__(coordinator, context=idx)
         _LOGGER.info(pformat(sensor))
         self._attr_unique_id = f"{sensor['device_id']}_humidity"
         self._api = api
         self._sensor = device
+        self.idx = idx
 
         if hasattr(self._sensor, "humidity"):
             self._humidity = self._sensor.humidity
         if hasattr(self._sensor, "online"):
             self._online = self._sensor.online
-
-    @property
-    def available(self) -> bool:
-        """
-        Return True if entity is available.
-
-        :return: bool
-        """
-        return self._online
 
     @property
     def name(self) -> str:
@@ -437,21 +411,19 @@ class GoveeHumiditySensor(SensorEntity):
             model_id=self._sensor.sku,
         )
 
-    async def async_update(self) -> None:
-        """
-        Update the sensor state.
-
-        :return: None
-        """
-        await self._sensor.update(self._api)
-        if hasattr(self._sensor, "humidity"):
-            self._humidity = self._sensor.humidity
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        temp = self.coordinator.data[self.idx]["state"]
+        _LOGGER.error("Humidity sensor state: %s", temp)
+        self._attr_is_on = temp
+        self.async_write_ha_state()
 
 
-class GoveeTemperatureSensor(SensorEntity):
+class GoveeTemperatureSensor(CoordinatorEntity, SensorEntity):
     """Representation of a Govee Temperature Sensor."""
 
-    def __init__(self, sensor: dict, api: GoveeAPI, device: H5179) -> None:
+    def __init__(self, coordinator, idx, sensor: dict, api: GoveeAPI, device: H5179) -> None:
         """
         Initialize an Govee Humidity Sensor.
 
@@ -459,24 +431,17 @@ class GoveeTemperatureSensor(SensorEntity):
         :param api: GoveeAPI instance
         :param device: Device instance
         """
+        super().__init__(coordinator, context=idx)
         _LOGGER.info(pformat(sensor))
         self._attr_unique_id = f"{sensor['device_id']}_temperature"
         self._api = api
         self._sensor = device
+        self.idx = idx
 
         if hasattr(self._sensor, "temperature"):
             self._temperature = self._sensor.temperature
         if hasattr(self._sensor, "online"):
             self._online = self._sensor.online
-
-    @property
-    def available(self) -> bool:
-        """
-        Return True if entity is available.
-
-        :return: bool
-        """
-        return self._online
 
     @property
     def name(self) -> str:
@@ -532,12 +497,10 @@ class GoveeTemperatureSensor(SensorEntity):
             model_id=self._sensor.sku,
         )
 
-    async def async_update(self) -> None:
-        """
-        Update the sensor state.
-
-        :return: None
-        """
-        await self._sensor.update(self._api)
-        if hasattr(self._sensor, "temperature"):
-            self._temperature = self._sensor.temperature
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        temp = self.coordinator.data[self.idx]["state"]
+        _LOGGER.error("Temperature sensor state: %s", temp)
+        self._attr_is_on = temp
+        self.async_write_ha_state()
