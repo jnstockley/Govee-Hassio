@@ -47,6 +47,17 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
                     device for device in devices if device["sku"] in supported_skus
                 ]
 
+                # Filter out devices that are already configured
+                current_ids = {
+                    entry.unique_id for entry in self._async_current_entries()
+                    if entry.unique_id is not None
+                }
+
+                self.discovered_devices = [
+                    device for device in self.discovered_devices
+                    if device["device"] not in current_ids
+                ]
+
                 if not self.discovered_devices:
                     errors["base"] = "no_devices_found"
                 else:
@@ -97,6 +108,9 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
             for d in self.discovered_devices
         }
 
+        if not device_options:
+            return self.async_abort(reason="no_unconfigured_devices")
+
         return self.async_show_form(
             step_id="select_device",
             data_schema=vol.Schema({
@@ -131,6 +145,10 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
         name = user_input.get(CONF_NAME).lower()
 
         try:
+            # Check if this device is already configured
+            await self.async_set_unique_id(device_id)
+            self._abort_if_unique_id_configured()
+
             api = GoveeAPI(api_key)
 
             match name:
@@ -145,8 +163,6 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
                     return await self._show_setup_form(errors)
 
             await device.update(api)
-            await self.async_set_unique_id(device_id)
-            self._abort_if_unique_id_configured()
 
             return self.async_create_entry(
                 title=f"Govee {device.device_name}",
