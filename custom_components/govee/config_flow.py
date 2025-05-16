@@ -1,4 +1,5 @@
 """Config flow for Govee integration."""
+
 import logging
 from typing import Any
 
@@ -42,19 +43,15 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
                 devices = await api.get_devices()
 
                 # Filter devices to only include supported devices
-                self.discovered_devices = [
-                    device for device in devices if device["sku"] in supported_skus
-                ]
+                self.discovered_devices = [device for device in devices if device["sku"] in supported_skus]
 
                 # Filter out devices that are already configured
                 current_ids = {
-                    entry.unique_id for entry in self._async_current_entries()
-                    if entry.unique_id is not None
+                    entry.unique_id for entry in self._async_current_entries() if entry.unique_id is not None
                 }
 
                 self.discovered_devices = [
-                    device for device in self.discovered_devices
-                    if device["device"] not in current_ids
+                    device for device in self.discovered_devices if device["device"] not in current_ids
                 ]
 
                 if not self.discovered_devices:
@@ -67,9 +64,11 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(CONF_API_KEY): cv.string,
-            }),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_API_KEY): cv.string,
+                }
+            ),
             errors=errors,
         )
 
@@ -103,8 +102,7 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
 
         # Create a list of devices for selection
         device_options = {
-            d["device"]: f"{d['deviceName']} - {d['sku']} ({d['device']})"
-            for d in self.discovered_devices
+            d["device"]: f"{d['deviceName']} - {d['sku']} ({d['device']})" for d in self.discovered_devices
         }
 
         if not device_options:
@@ -112,9 +110,11 @@ class GoveeConfigFlow(config_entries.ConfigFlow, domain="govee"):
 
         return self.async_show_form(
             step_id="select_device",
-            data_schema=vol.Schema({
-                vol.Required(CONF_DEVICE_ID): vol.In(device_options),
-            }),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_DEVICE_ID): vol.In(device_options),
+                }
+            ),
             errors=errors,
         )
 

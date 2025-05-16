@@ -73,11 +73,13 @@ async def async_setup_entry(
         case "h5179":
             device = H5179(sensor["device_id"])
             await device.update(api)
-            async_add_entities([
-                GoveeOnlineSensor(sensor, api, device),
-                GoveeHumiditySensor(sensor, api, device),
-                GoveeTemperatureSensor(sensor, api, device),
-            ])
+            async_add_entities(
+                [
+                    GoveeOnlineSensor(sensor, api, device),
+                    GoveeHumiditySensor(sensor, api, device),
+                    GoveeTemperatureSensor(sensor, api, device),
+                ]
+            )
         case _:
             _LOGGER.warning("Unknown device name: %s", sensor["name"])
 
