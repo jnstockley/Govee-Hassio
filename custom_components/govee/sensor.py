@@ -104,6 +104,15 @@ class GoveeOnlineSensor(SensorEntity):
             self._online = self._sensor.online
 
     @property
+    def available(self) -> bool:
+        """
+        Return True if entity is available.
+
+        :return: bool
+        """
+        return self._online
+
+    @property
     def name(self) -> str:
         """
         Return the display name of this sensor.
@@ -190,6 +199,17 @@ class GoveeFilterLifeSensor(SensorEntity):
 
         if hasattr(self._sensor, "filter_life"):
             self._filter_life = self._sensor.filter_life
+        if hasattr(self._sensor, "online"):
+            self._online = self._sensor.online
+
+    @property
+    def available(self) -> bool:
+        """
+        Return True if entity is available.
+
+        :return: bool
+        """
+        return self._online
 
     @property
     def name(self) -> str:
@@ -265,6 +285,17 @@ class GoveeAirQualitySensor(SensorEntity):
 
         if hasattr(self._sensor, "air_quality"):
             self._air_quality = self._sensor.air_quality
+        if hasattr(self._sensor, "online"):
+            self._online = self._sensor.online
+
+    @property
+    def available(self) -> bool:
+        """
+        Return True if entity is available.
+
+        :return: bool
+        """
+        return self._online
 
     @property
     def name(self) -> str:
@@ -340,6 +371,17 @@ class GoveeHumiditySensor(SensorEntity):
 
         if hasattr(self._sensor, "humidity"):
             self._humidity = self._sensor.humidity
+        if hasattr(self._sensor, "online"):
+            self._online = self._sensor.online
+
+    @property
+    def available(self) -> bool:
+        """
+        Return True if entity is available.
+
+        :return: bool
+        """
+        return self._online
 
     @property
     def name(self) -> str:
@@ -424,6 +466,17 @@ class GoveeTemperatureSensor(SensorEntity):
 
         if hasattr(self._sensor, "temperature"):
             self._temperature = self._sensor.temperature
+        if hasattr(self._sensor, "online"):
+            self._online = self._sensor.online
+
+    @property
+    def available(self) -> bool:
+        """
+        Return True if entity is available.
+
+        :return: bool
+        """
+        return self._online
 
     @property
     def name(self) -> str:
