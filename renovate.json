@@ -6,7 +6,7 @@
   "assignees": [
     "jnstockley"
   ],
-  "baseBranches": [
+  "baseBranchPatterns": [
     "dev"
   ]
 }
